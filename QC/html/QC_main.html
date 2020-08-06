@@ -1,0 +1,2766 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>QC_main</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-28"><meta name="DC.source" content="QC_main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">import and prep data</a></li><li><a href="#3">plot experimental variance in each dataset</a></li><li><a href="#4">Quantify signal strength using SVR brain decoding</a></li><li><a href="#5">Bad datasets</a></li></ul></div><pre class="codeinput"><span class="comment">% We then compute SS_regressor following the method for computing R2</span>
+<span class="comment">% detailed here:</span>
+<span class="comment">% https://www.researchgate.net/publication/306347340_A_Pseudo_Decomposition_of_R2_in_Multiple_Linear_Regression</span>
+<span class="comment">% and here:</span>
+<span class="comment">% http://biol09.biol.umontreal.ca/borcardd/partialr2.pdf (no. 1)</span>
+
+close <span class="string">all</span>;
+clear <span class="string">all</span>;
+
+warning(<span class="string">'off'</span>,<span class="string">'all'</span>)
+
+addpath(genpath(<span class="string">'/projects/bope9760/CanlabCore/CanlabCore'</span>));
+addpath(genpath(<span class="string">'/projects/bope9760/spm12'</span>));
+addpath(genpath(<span class="string">'/projects/bope9760/single_trials_overview/repo'</span>)); <span class="comment">% single_trials repo</span>
+addpath(<span class="string">'/work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo/'</span>); <span class="comment">% single trial data on blanca</span>
+</pre><h2 id="2">import and prep data</h2><p>- concatenate subject data matrices from canlab_dataset objects</p><p>- remove trials with high_vif or vif &gt; 2.5, for consistency with subsequent   imaging datasets</p><p>- separate pain from non-pain datasets</p><p>- remove trials with missing responses (rating == nan)</p><p>- add subject and study ids</p><pre class="codeinput">st_datasets = {<span class="string">'nsf'</span>,<span class="string">'bmrk3'</span>,<span class="string">'bmrk4'</span>,<span class="string">'bmrk5'</span>,<span class="string">'remi'</span>,<span class="string">'scebl'</span>,<span class="string">'ie2'</span>,<span class="string">'ie'</span>,<span class="keyword">...</span>
+    <span class="string">'exp'</span>,<span class="string">'levoderm'</span>,<span class="string">'stephan'</span>,<span class="string">'romantic'</span>,<span class="string">'ilcp'</span>};
+n_datasets = length(st_datasets);
+
+dat = cell(n_datasets,1);
+<span class="keyword">for</span> i = 1:length(st_datasets)
+    this_dat = importdata([st_datasets{i}, <span class="string">'_dataset_obj.mat'</span>]);
+    dat{i} = array2table(cell2mat(this_dat.Event_Level.data'),<span class="keyword">...</span>
+        <span class="string">'VariableNames'</span>,this_dat.Event_Level.names);
+    uniq_subject_id = this_dat.Subj_Level.id;
+    subject_id = [];
+    <span class="keyword">for</span> j = 1:length(uniq_subject_id)
+        subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+    <span class="keyword">end</span>
+    dat{i}.subject_id = subject_id';
+    <span class="comment">% this removes non-thermal data, we'll add these back in later</span>
+    dat{i} = dat{i}(~isnan(dat{i}.rating) &amp; ~isnan(dat{i}.T),:);
+
+    <span class="keyword">if</span> contains(st_datasets{i},<span class="string">'bmrk5'</span>)
+        dat{i}.soundintensity = [];
+    <span class="keyword">end</span>
+    fnames = dat{i}.Properties.VariableNames;
+    <span class="keyword">if</span> any(ismember(fnames,<span class="string">'high_vif'</span>))
+        dat{i}(dat{i}.high_vif == 1,:) = [];
+    <span class="keyword">end</span>
+    <span class="keyword">if</span> any(ismember(fnames,<span class="string">'vif'</span>))
+        dat{i}(dat{i}.vif &gt;= 2.5,:) = [];
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">% remove warm (non-painful) trials (rating &lt;= 100)</span>
+<span class="comment">% note, this makes it harder to interpret some self regulation effects,</span>
+<span class="comment">% since many regulate down conditions end up getting dropped this way, but</span>
+<span class="comment">% because outcome measures mean different things at sub 100 vs. over 100,</span>
+<span class="comment">% we drop them for linear outcome modeling purposes</span>
+bmrk3rating = dat{ismember(st_datasets,<span class="string">'bmrk3'</span>)}.rating - 100;
+dat{ismember(st_datasets,<span class="string">'bmrk3'</span>)}.rating = bmrk3rating;
+dat{ismember(st_datasets,<span class="string">'bmrk3'</span>)} = dat{ismember(st_datasets,<span class="string">'bmrk3'</span>)}(bmrk3rating &gt; 0,:);
+
+<span class="comment">% take care of non-pain data</span>
+this_dat = importdata(<span class="string">'bmrk3_dataset_obj'</span>);
+dat{end+1} = array2table(cell2mat(this_dat.Event_Level.data'),<span class="keyword">...</span>
+        <span class="string">'VariableNames'</span>,this_dat.Event_Level.names);
+uniq_subject_id = this_dat.Subj_Level.id;
+subject_id = [];
+<span class="keyword">for</span> j = 1:length(uniq_subject_id)
+    subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+<span class="keyword">end</span>
+dat{end}.subject_id = subject_id';
+dat{end} = dat{end}(dat{end}.rating &lt;= 100,:);
+
+this_dat = importdata(<span class="string">'bmrk5_dataset_obj'</span>);
+dat{end+1} = array2table(cell2mat(this_dat.Event_Level.data'),<span class="keyword">...</span>
+        <span class="string">'VariableNames'</span>,this_dat.Event_Level.names);
+uniq_subject_id = this_dat.Subj_Level.id;
+subject_id = [];
+<span class="keyword">for</span> j = 1:length(uniq_subject_id)
+    subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+<span class="keyword">end</span>
+dat{end}.subject_id = subject_id';
+dat{end} = dat{end}(isnan(dat{end}.T) &amp; ~isnan(dat{end}.rating),:);
+dat{end}.T = [];
+
+<span class="comment">%c = seaborn_colors;</span>
+<span class="comment">%c = shuffles(c);</span>
+</pre><h2 id="3">plot experimental variance in each dataset</h2><p>- We model subjects as fixed effects</p><p>- We use backwards stepwise regression to select additional experimental   factors</p><p>- Not all subject have trial sequence data, but for datasets where this   is missing we provide the mean</p><p>- model interactions in cases where these were key factors (e.g.   plaebo*value in stephan's placebo dataset), but otherwise stick to   linear effects.</p><p>- adjust labels in pie plots to avoid overlapping numbers</p><p>- use consistent units across datasets, and concatenate all data for a   final aggregate analyses (top left pie plot). Use within-dataset   z-scored pain ratings for aggregate analyses. Exclude non pain data.</p><p>- standardize all variables before regression modeling to get   standardized regression coefficients (necessary for partial R2   calculation)</p><p>Note that for agregate analysis "subject fixed effects" are colinear with study effects, so you should expect the "subject effects" to explain a disproportionate amount of the variance relative to what they explain in individual dataset analyses.</p><pre class="codeinput">c = colormap(<span class="string">'lines'</span>);
+
+<span class="comment">%</span>
+<span class="comment">% eval nsf</span>
+<span class="comment">%</span>
+this_st_id = 1;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'overallN'</span>,<span class="string">'siteN'</span>,<span class="string">'runN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+<span class="comment">% compute partial r2</span>
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:4
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval bmrk3pain</span>
+<span class="comment">%</span>
+this_st_id = 2;
+newdat_st = dat{this_st_id};
+
+newdat_st = newdat_st(~newdat_st.high_vif,:);
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'high_vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>,<span class="string">'reg'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(3,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(2).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'pain\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval bmrk4</span>
+<span class="comment">%</span>
+this_st_id = 3;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'siteN'</span>,<span class="string">'runN'</span>,<span class="string">'high_vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:8
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(4).Position = f(4).Position + [0,0.25,0];
+f(6).Position = f(6).Position - [0,0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% bmrk5pain</span>
+<span class="comment">%</span>
+this_st_id = 4;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>;
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'pain\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% remi</span>
+<span class="comment">%</span>
+this_st_id = 5;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'runN'</span>,<span class="string">'overallN'</span>,<span class="string">'vif'</span>,<span class="string">'placebo'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+drug_idx = ismember(partialR2.Row,{<span class="string">'drug'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>,<span class="string">'open'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx)),sum(R2(drug_idx))],ones(5,1));
+<span class="keyword">for</span> i = 2:2:10
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(4).Position = f(4).Position - [0.2,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+f(5).FaceColor = c(2,:); <span class="comment">% drug variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval scebl</span>
+<span class="comment">%</span>
+this_st_id = 6;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'overallN'</span>,<span class="string">'cue'</span>,<span class="string">'vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:8
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(4).Position = f(4).Position - [0.25,-0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval ie2</span>
+<span class="comment">%</span>
+this_st_id = 7;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'high_vif'</span>,<span class="string">'overallN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:8
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(4).Position = f(4).Position - [0.25,-0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval ie</span>
+<span class="comment">%</span>
+this_st_id = 8;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'siteN'</span>,<span class="string">'runN'</span>,<span class="string">'overallN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(2).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval_exp</span>
+<span class="comment">%</span>
+this_st_id = 9;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'runN'</span>,<span class="string">'siteN'</span>,<span class="string">'vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:8
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval levoderm</span>
+<span class="comment">%</span>
+this_st_id = 10;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'vif'</span>,<span class="string">'reveal'</span>,<span class="string">'conditioningN'</span>,<span class="string">'runN'</span>,<span class="string">'siteN'</span>,<span class="string">'overallN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>,<span class="string">'reveal'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(2).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval stephan</span>
+<span class="comment">%</span>
+this_st_id = 11;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+t.int = zscore(t.placebo.*t.value);
+cov_names = [cov_names,<span class="string">'int'</span>];
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'T'</span>,<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'overallN'</span>,<span class="string">'vif'</span>,<span class="string">'runN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'int'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(2).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval romantic</span>
+<span class="comment">%</span>
+this_st_id = 12;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>,<span class="string">'T'</span>,<span class="string">'high_vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:4
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(2).Position = f(2).Position - [-0.25,0,0];
+f(4).Position = f(4).Position - [0.25,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(2).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% eval ilcp</span>
+<span class="comment">%</span>
+this_st_id = 13;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'cue'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>,<span class="string">'vif'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:8
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},<span class="string">'_data.mat'</span>,<span class="string">''</span>),<span class="string">'_'</span>,<span class="string">' '</span>), <span class="string">'\n'</span>], <span class="string">'\n'</span>]));
+
+<span class="comment">%</span>
+<span class="comment">% bmr3heat</span>
+<span class="comment">%</span>
+this_st_id = 14;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'high_vif'</span>,<span class="string">'overallN'</span>,<span class="string">'siteN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(2).Position = f(2).Position - [-0.25,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+title(sprintf(<span class="string">'bmrk3warm\n\n'</span>));
+
+<span class="comment">%</span>
+<span class="comment">% bmrk5snd</span>
+<span class="comment">%</span>
+this_st_id = 15;
+newdat_st = dat{this_st_id};
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,{<span class="string">'sid'</span>,<span class="string">'rating'</span>,<span class="string">'high_vif'</span>,<span class="string">'vif'</span>,<span class="string">'overallN'</span>,<span class="string">'siteN'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>,<span class="string">'soundintensity'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+<span class="keyword">for</span> i = 2:2:6
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(2).Position = f(2).Position - [-0.3,0,0];
+f(4).Position = f(4).Position - [0.3,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(4,:); <span class="comment">% sound</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(3).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+title(sprintf(<span class="string">'bmrk5snd\n\n'</span>));
+
+<span class="comment">%</span>
+<span class="comment">% eval all pain</span>
+<span class="comment">%</span>
+t = expand_metadata_table(dat{1:length(st_datasets)});
+<span class="keyword">for</span> i = 1:length(t)
+    t{i}.st_id = cellstr(repmat(st_datasets{i},height(t{i}),1));
+    t{i}.rating = zscore(t{i}.rating);
+<span class="keyword">end</span>
+t = tbl_vcat(t{:});
+[~,~,sid] = unique([char(t.subject_id), char(t.st_id)],<span class="string">'rows'</span>,<span class="string">'stable'</span>);
+t.subject_id = sid;
+[~,~,st_id] = unique(char(t.st_id),<span class="string">'rows'</span>,<span class="string">'stable'</span>);
+t.st_id = st_id;
+
+<span class="comment">% manually set some defaults</span>
+t.placebo(isnan(t.placebo)) = 0;
+t.drug(isnan(t.drug)) = 0;
+t.open(isnan(t.open)) = 0;
+t.open(t.placebo == 1) = 1; <span class="comment">% all placebos are effectively "open" drug label in the sense used in the remifentanil study</span>
+t.handholding(isnan(t.handholding)) = 0;
+t.reg(isnan(t.reg)) = 0;
+t.reveal(isnan(t.reveal)) = 0;
+t.social(isnan(t.social)) = 0;
+t.value(isnan(t.value)) = 0;
+t.ctrl(isnan(t.ctrl)) = 0;
+
+t.high_vif(isnan(t.high_vif)) = 0;
+t.vif(isnan(t.vif)) = 0;
+
+new_t = t(~t.high_vif | t.vif &gt; 2.5,:);
+t = new_t;
+
+t.int = t.value.*t.placebo;
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(t);
+
+m = fitlm(t,<span class="string">'ResponseVar'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'PredictorVar'</span>,cov_names(~ismember(cov_names,<span class="keyword">...</span>
+    {<span class="string">'conditioningN'</span>,<span class="string">'high_vif'</span>,<span class="string">'rating'</span>,<span class="keyword">...</span>
+    <span class="string">'soundintensity'</span>,<span class="string">'st_id'</span>,<span class="string">'subject_id'</span>,<span class="string">'vif'</span>,<span class="string">'reveal'</span>})),<span class="keyword">...</span>
+    <span class="string">'Intercept'</span>,false);
+
+partialR2 = partialRsquared(m);
+<span class="keyword">if</span> abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) &gt; 0.0001
+    warning([<span class="string">'Partial R2 computation doesn''t seem to be working for study '</span> int2str(this_st_id)]);
+<span class="keyword">end</span>
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{<span class="string">'T'</span>});
+sens_idx = ismember(partialR2.Row,{<span class="string">'siteN'</span>,<span class="string">'overallN'</span>,<span class="string">'runN'</span>});
+sid_idx = find(contains(partialR2.Row,<span class="string">'sub'</span>));
+cog_idx = ismember(partialR2.Row,{<span class="string">'cue'</span>,<span class="string">'ctrl'</span>,<span class="string">'social'</span>,<span class="string">'placebo'</span>,<span class="string">'value'</span>,<span class="string">'reveal'</span>,<span class="string">'handholding'</span>});
+drug_idx = ismember(partialR2.Row,<span class="string">'drug'</span>);
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), 1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx)),sum(R2(drug_idx))],ones(5,1));
+<span class="keyword">for</span> i = 2:2:10
+    <span class="keyword">if</span> strmatch(f(i).String,<span class="string">'0%'</span>)
+        f(i).String = <span class="string">''</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+f(4).Position = f(4).Position - [0.1,-0.1,0];
+f(6).Position = f(6).Position - [0.1,0.2,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); <span class="comment">% Temp</span>
+f(2).FaceColor = c(3,:); <span class="comment">% Sensitization/Habituation</span>
+f(4).FaceColor = <span class="string">'white'</span>; <span class="comment">% Subj fixed fx variance</span>
+f(3).FaceColor = c(1,:); <span class="comment">% cog variance</span>
+f(5).FaceColor = c(2,:); <span class="comment">% drug variance</span>
+title(sprintf(<span class="string">'Pain Datasets (n=13) \n Aggregate\n'</span>))
+
+l = legend({<span class="string">'T'</span>,<span class="string">'Sens/Habit'</span>,<span class="string">'Cog'</span>,<span class="string">'Subject'</span>,<span class="string">'Drug'</span>},<span class="string">'location'</span>,<span class="string">'southwest'</span>);
+l.Position = l.Position - [0.17,0,0,0];
+set(get(gca,<span class="string">'Legend'</span>),<span class="string">'FontSize'</span>,10)
+
+p = get(gcf,<span class="string">'Position'</span>);
+set(gcf,<span class="string">'Position'</span>,[p(1:2), 1248, 966]);
+</pre><img vspace="5" hspace="5" src="QC_main_01.png" alt=""> <h2 id="4">Quantify signal strength using SVR brain decoding</h2><p>- obfuscate dataset identity to discourage chery picking for future   analysis based on SNR. Any studies with SNR so low as to suggest   corrupt data will be identified. Otherwise, the purpose of what follows   is to provide guidelines for what one can expect in terms of decoding   performance when using linear MVPA methods.</p><p>- control for subject fixed effects, since experience suggests between   subject effects aren't detected very well. We will print out raw r^2   values for predicted vs. observed though for comparison for those who   are curious.</p><pre class="codeinput">st_datasets = {<span class="string">'nsf'</span>,<span class="string">'bmrk3pain'</span>,<span class="string">'bmrk4'</span>,<span class="string">'bmrk5pain'</span>,<span class="string">'remi'</span>,<span class="string">'scebl'</span>,<span class="string">'ie2'</span>,<span class="string">'ie'</span>,<span class="keyword">...</span>
+    <span class="string">'exp'</span>,<span class="string">'levoderm'</span>,<span class="string">'stephan'</span>,<span class="string">'romantic'</span>,<span class="string">'ilcp'</span>,<span class="string">'bmrk3warm'</span>,<span class="string">'bmrk5snd'</span>};
+
+<span class="comment">% obfuscate identity</span>
+st_datsets = st_datasets(randperm(length(st_datasets)));
+
+[cverr, stats, optout, obs, subject_id] = deal(cell(length(st_datasets),1));
+<span class="keyword">if</span> ~isempty(gcp(<span class="string">'nocreate'</span>))
+    delete(gcp(<span class="string">'nocreate'</span>))
+<span class="keyword">end</span>
+parpool(16);
+<span class="keyword">parfor</span> i = 1:length(st_datasets)
+    warning(<span class="string">'off'</span>,<span class="string">'all'</span>)
+    <span class="comment">% capture output to prevent clues that might reveal which dataset this</span>
+    <span class="comment">% is</span>
+    this_data = load_image_set(st_datasets{i});
+
+    <span class="comment">% remove any trials lacking responses (dat.Y = nan), or with high VIF</span>
+    good_trials = ones(length(this_data.Y),1);
+
+    fnames = this_data.metadata_table.Properties.VariableNames;
+    <span class="keyword">if</span> any(ismember(fnames,<span class="string">'high_vif'</span>))
+        good_trials(this_data.metadata_table.high_vif == 1) = 0;
+    <span class="keyword">end</span>
+    <span class="keyword">if</span> any(ismember(fnames,<span class="string">'vif'</span>))
+        good_trials(this_data.metadata_table.vif &gt;= 2.5) = 0;
+    <span class="keyword">end</span>
+    good_trials(isnan(this_data.Y)) = 0;
+    good_trials = logical(good_trials);
+
+    this_data = this_data.get_wh_image(good_trials);
+
+    <span class="comment">% specify folds manually to maintain subject groupings across fold</span>
+    <span class="comment">% slicings</span>
+    [~,~,subject_id{i}] = unique(char(this_data.metadata_table.subject_id),<span class="string">'rows'</span>,<span class="string">'stable'</span>);
+    cv = cvpartition2(ones(size(this_data.dat,2),1), <span class="string">'KFOLD'</span>, 5, <span class="string">'Stratify'</span>, subject_id{i});
+    fold_labels = zeros(size(this_data.dat,2),1);
+    <span class="keyword">for</span> j = 1:cv.NumTestSets
+        fold_labels(cv.test(j)) = j;
+    <span class="keyword">end</span>
+
+    [cverr{i},stats{i},optout{i}] = this_data.predict(<span class="string">'algorithm_name'</span>, <span class="string">'cv_svr'</span>, <span class="string">'nfolds'</span>, fold_labels, <span class="string">'error_type'</span>, <span class="string">'mse'</span>, <span class="string">'useparallel'</span>, 0, <span class="string">'verbose'</span>, 0);
+    obs{i} = this_data.Y;
+<span class="keyword">end</span>
+
+<span class="keyword">for</span> i = 1:length(st_datasets)
+    <span class="comment">% plot results</span>
+    figure(2)
+    subplot(ceil(sqrt(n_datasets)), ceil((n_datasets)/ceil(sqrt(n_datasets))), i);
+    r2 = corr(stats{i}.yfit, obs{i}).^2;
+    f = pie(r2);
+    f = f(1:2:end);
+    f(1).FaceColor = [0.5,0.5,0.5]; <span class="comment">% svr</span>
+    <span class="keyword">if</span> ismember(st_datasets{i},{<span class="string">'bmrk3warm'</span>,<span class="string">'bmrk5pain'</span>})
+        title(sprintf(<span class="string">'Random dataset %d\n(nonpain)\n'</span>, i));
+    <span class="keyword">else</span>
+        title(sprintf(<span class="string">'Random dataset %d\n\n'</span>, i));
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+save(<span class="string">'st_datasets.mat'</span>,<span class="string">'st_datasets'</span>,<span class="string">'cverr'</span>,<span class="string">'stats'</span>,<span class="string">'optout'</span>,<span class="string">'obs'</span>,<span class="string">'subject_id'</span>);
+
+p = get(gcf,<span class="string">'Position'</span>);
+set(gcf,<span class="string">'Position'</span>,[p(1:2), 1248, 966]);
+</pre><pre class="codeoutput">Parallel pool using the 'local' profile is shutting down.
+Starting parallel pool (parpool) using the 'local' profile ...
+connected to 16 workers.
+ 
+Source: Romantic Pain data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Lopez-Sola, et al. (2019) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 480	Nonempty: 480	Complete: 480
+Voxels: 328798	Nonempty: 328798	Complete: 323776
+Unique data values: 82177956
+ 
+Min: -44.019	Max: 43.529	Mean: 0.071	Std: 0.742
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -4.6006
+        0.5         -2.3523
+          1         -1.7967
+          5        -0.88787
+         25        -0.22951
+         50        0.042391
+         75         0.35992
+         95          1.1072
+         99          2.0649
+       99.5          2.6096
+       99.9          4.5095
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+ 
+ 
+Source: NSF data aggregated from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager, et al. (2013) New England Journal of Medicine
+Atlas, et al. (2014) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1149	Nonempty: 1149	Complete: 1149
+Voxels: 329694	Nonempty: 329694	Complete: 328249
+Unique data values: 136162680
+ 
+Min: -1312.863	Max: 888.306	Mean: -0.351	Std: 21.183
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -134.41
+        0.5           -81.216
+          1           -63.577
+          5           -31.933
+         25           -8.2459
+         50        3.1861e-06
+         75             8.286
+         95            29.963
+         99            56.493
+       99.5            70.713
+       99.9            112.42
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+Source: bmrk3warm img data from Tor Wager's single trials Google Drive. Metadata also from wagerlab/labdata/current/BMRK3 HPC storage
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager,  et al. (2013) New England Journal of Medicine
+Woo et al. (2015) PLoS Biology
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1502	Nonempty: 1502	Complete: 1502
+Voxels: 328798	Nonempty: 328798	Complete: 327472
+Unique data values: 129320822
+ 
+Min: -81.910	Max: 143.410	Mean: -0.006	Std: 0.497
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1            -3.0485
+        0.5              -1.77
+          1            -1.3678
+          5           -0.68094
+         25           -0.19522
+         50        -0.00068394
+         75            0.19002
+         95            0.65406
+         99              1.275
+       99.5             1.6349
+       99.9             2.8324
+
+ 
+Warmth ratings in image_obj.Y
+ 
+ 
+Source: bmrk3pain img data from Tor Wager's single trials Google Drive. Metadata also from wagerlab/labdata/current/BMRK3/ HPC storage
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager,  et al. (2013) New England Journal of Medicine
+Woo et al. (2015) PLoS Biology
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1699	Nonempty: 1699	Complete: 1699
+Voxels: 328798	Nonempty: 328798	Complete: 327472
+Unique data values: 135864812
+ 
+Min: -133.823	Max: 84.093	Mean: -0.006	Std: 0.545
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1             -3.469
+        0.5            -1.9328
+          1            -1.4777
+          5           -0.72485
+         25           -0.20535
+         50        -0.00043151
+         75            0.19939
+         95            0.69711
+         99             1.3839
+       99.5             1.7974
+       99.9             3.2719
+
+ 
+Pain ratings in image_obj.Y
+Source: levoderm data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Scott Shaefer PhD Dissertation (2016). see ~p.60
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1916	Nonempty: 1916	Complete: 1916
+Voxels: 326942	Nonempty: 326942	Complete: 270862
+Unique data values: 144500739
+ 
+Min: -85.376	Max: 89.908	Mean: 0.006	Std: 0.690
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -4.6443
+        0.5           -2.3335
+          1           -1.7441
+          5          -0.81805
+         25          -0.21384
+         50        7.8729e-16
+         75           0.22636
+         95           0.84039
+         99             1.738
+       99.5            2.3016
+       99.9            4.5592
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: ILCP data from ILCP_wani on Tor Wager single trials Google Drive.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Woo, et al. (2017) Nature Communications
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1856	Nonempty: 1856	Complete: 1856
+Voxels: 328798	Nonempty: 328798	Complete: 327032
+Unique data values: 130612023
+ 
+Min: -21.172	Max: 36.946	Mean: -0.000	Std: 0.595
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -3.3143
+        0.5           -2.0725
+          1           -1.6558
+          5          -0.87807
+         25          -0.26636
+         50        -0.0011205
+         75           0.26427
+         95           0.88182
+         99            1.6585
+       99.5              2.07
+       99.9            3.2943
+
+ 
+Pain ratings in image_obj.Y
+ 
+Source: Romantic Pain data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Lopez-Sola, et al. (2019) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 480	Nonempty: 480	Complete: 480
+Voxels: 328798	Nonempty: 328798	Complete: 323776
+Unique data values: 82177956
+ 
+Min: -44.019	Max: 43.529	Mean: 0.071	Std: 0.742
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -4.6006
+        0.5         -2.3523
+          1         -1.7967
+          5        -0.88787
+         25        -0.22951
+         50        0.042391
+         75         0.35992
+         95          1.1072
+         99          2.0649
+       99.5          2.6096
+       99.9          4.5095
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+ 
+Source: ie2 img data from Tor Wager's single trials Google Drive ("IE2_NEW"). Metadata from wagerlab/labdata/current/ie2/ HPC storage.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Jepma et al. (2018) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1330	Nonempty: 1330	Complete: 1330
+Voxels: 328798	Nonempty: 328798	Complete: 302216
+Unique data values: 124509004
+ 
+Min: -120.142	Max: 162.877	Mean: -0.210	Std: 2.134
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -14.757
+        0.5         -8.5044
+          1         -6.5994
+          5         -3.3219
+         25        -0.98972
+         50        -0.10738
+         75         0.66265
+         95          2.6676
+         99          5.2046
+       99.5          6.5986
+       99.9          11.106
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+ 
+ 
+Source: Romantic Pain data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Lopez-Sola, et al. (2019) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 480	Nonempty: 480	Complete: 480
+Voxels: 328798	Nonempty: 328798	Complete: 323776
+Unique data values: 82177956
+ 
+Min: -44.019	Max: 43.529	Mean: 0.071	Std: 0.742
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -4.6006
+        0.5         -2.3523
+          1         -1.7967
+          5        -0.88787
+         25        -0.22951
+         50        0.042391
+         75         0.35992
+         95          1.1072
+         99          2.0649
+       99.5          2.6096
+       99.9          4.5095
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+ 
+Source: ie2 img data from Tor Wager's single trials Google Drive ("IE2_NEW"). Metadata from wagerlab/labdata/current/ie2/ HPC storage.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Jepma et al. (2018) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1330	Nonempty: 1330	Complete: 1330
+Voxels: 328798	Nonempty: 328798	Complete: 302216
+Unique data values: 124509004
+ 
+Min: -120.142	Max: 162.877	Mean: -0.210	Std: 2.134
+ 
+    Percentiles     Values 
+ 
+ 
+ 
+ 
+Source: levoderm data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Scott Shaefer PhD Dissertation (2016). see ~p.60
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1916	Nonempty: 1916	Complete: 1916
+Voxels: 326942	Nonempty: 326942	Complete: 270862
+Unique data values: 144500739
+ 
+Min: -85.376	Max: 89.908	Mean: 0.006	Std: 0.690
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -4.6443
+        0.5           -2.3335
+          1           -1.7441
+          5          -0.81805
+         25          -0.21384
+         50        7.8729e-16
+         75           0.22636
+         95           0.84039
+         99             1.738
+       99.5            2.3016
+       99.9            4.5592
+
+ 
+Pain ratings in image_obj.Y
+ 
+Source: Romantic Pain data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Lopez-Sola, et al. (2019) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 480	Nonempty: 480	Complete: 480
+Voxels: 328798	Nonempty: 328798	Complete: 323776
+Unique data values: 82177956
+ 
+Min: -44.019	Max: 43.529	Mean: 0.071	Std: 0.742
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -4.6006
+        0.5         -2.3523
+          1         -1.7967
+          5        -0.88787
+         25        -0.22951
+         50        0.042391
+         75         0.35992
+         95          1.1072
+         99          2.0649
+       99.5          2.6096
+       99.9          4.5095
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Source: bmrk5pain data from wagerlab/labdata/projects/bmrk5_painsound/. Img data from the first_level_all_trs_single_trials/ subjfolder. Metadata from the single_trial_output_scnlab_july2016/ subfolder
+ 
+
+____________________________________________________________________________________________________________________________________________
+Losin, et al. (2019) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 3232	Nonempty: 3232	Complete: 3232
+Voxels: 237066	Nonempty: 237066	Complete: 225405
+Unique data values: 143236324
+ 
+Min: -128.846	Max: 173.216	Mean: 0.352	Std: 1.424
+ 
+    Percentiles     Values 
+ 
+Source: BMRK4 img data from Tor Wager's single trials Google Drive (bmrk4_smoothed_with_basis). Metadata also from wagerlab/labdata/current/bmrk4/Data/BMRK_Data HPC resources.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Krishnan et al. (2016) ELife
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2268	Nonempty: 2268	Complete: 2268
+Voxels: 328798	Nonempty: 328798	Complete: 312569
+Unique data values: 140850218
+ 
+Min: -3620.454	Max: 3602.969	Mean: -0.274	Std: 36.101
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -219.97
+        0.5         -125.84
+          1         -98.015
+          5          -49.91
+         25         -14.663
+         50        0.027471
+         75          14.592
+         95          47.747
+         99          93.267
+       99.5          120.79
+       99.9          220.31
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: SCEBL data from Tor Wager's single trials Google Drive.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Koban, et al. (2019) Nature Communications
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2496	Nonempty: 2496	Complete: 2496
+Voxels: 328798	Nonempty: 328798	Complete: 316545
+Unique data values: 150523552
+ 
+Min: -1491.870	Max: 2209.887	Mean: -0.171	Std: 5.758
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -29.294
+        0.5         -14.931
+          1         -11.336
+          5         -5.5979
+         25         -1.6108
+         50        -0.10308
+         75          1.2689
+         95          5.0186
+         99           10.42
+       99.5           13.76
+       99.9          27.431
+
+ 
+Pain ratings in image_obj.Y
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Source: ie img data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Roy, et al. (2014) Nature Neuroscience
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2400	Nonempty: 2400	Complete: 2400
+Voxels: 328798	Nonempty: 328798	Complete: 217519
+Unique data values: 148358675
+ 
+Min: -37.403	Max: 84.752	Mean: 0.017	Std: 0.690
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1            -3.7251
+        0.5            -2.3213
+          1            -1.8273
+          5           -0.92054
+         25           -0.25553
+         50        -0.00015127
+         75            0.26222
+         95             1.0003
+         99             2.1082
+       99.5             2.7565
+       99.9             4.7599
+
+ 
+Pain ratings in image_obj.Y
+ 
+Source: BMRK4 img data from Tor Wager's single trials Google Drive (bmrk4_smoothed_with_basis). Metadata also from wagerlab/labdata/current/bmrk4/Data/BMRK_Data HPC resources.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Krishnan et al. (2016) ELife
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2268	Nonempty: 2268	Complete: 2268
+Voxels: 328798	Nonempty: 328798	Complete: 312569
+Unique data values: 140850218
+ 
+Min: -3620.454	Max: 3602.969	Mean: -0.274	Std: 36.101
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -219.97
+        0.5         -125.84
+          1         -98.015
+          5          -49.91
+         25         -14.663
+         50        0.027471
+         75          14.592
+         95          47.747
+         99          93.267
+       99.5          120.79
+       99.9          220.31
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: EXP data from Tor Wager's single trials Google Drive. Metadata also from wagerlab/labdata/current/Expectancy/, especially the subfolder Behavioral/Sas_proc_mixed/, HPC storage.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Atlas, et al. (2010) Journal of Neuroscience
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1076	Nonempty: 1076	Complete: 1076
+Voxels: 350652	Nonempty: 350652	Complete: 341323
+Unique data values: 144698229
+ 
+Min: -33198.293	Max: 50026.984	Mean: -1.271	Std: 179.856
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1             -730.8
+        0.5            -287.99
+          1            -212.64
+          5            -104.91
+         25            -29.694
+         50        -1.9467e-07
+         75             28.253
+         95             101.05
+         99             201.13
+       99.5             268.52
+       99.9             639.72
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: SCEBL data from Tor Wager's single trials Google Drive.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Koban, et al. (2019) Nature Communications
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2496	Nonempty: 2496	Complete: 2496
+Voxels: 328798	Nonempty: 328798	Complete: 316545
+Unique data values: 150523552
+ 
+Min: -1491.870	Max: 2209.887	Mean: -0.171	Std: 5.758
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -29.294
+        0.5         -14.931
+          1         -11.336
+          5         -5.5979
+         25         -1.6108
+         50        -0.10308
+         75          1.2689
+         95          5.0186
+         99           10.42
+       99.5           13.76
+       99.9          27.431
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: Remi data from Tor Wager's single trials Google Drive.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Atlas, et al. (2012) Journal of Neuroscience
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1224	Nonempty: 1224	Complete: 1224
+Voxels: 326709	Nonempty: 326709	Complete: 231127
+Unique data values: 112706998
+ 
+Min: -4389.975	Max: 6131.055	Mean: 2.742	Std: 51.639
+ 
+    Percentiles    Values 
+    ___________    _______
+
+        0.1        -316.39
+        0.5         -178.5
+          1        -136.28
+          5        -67.958
+         25        -20.217
+         50         1.9473
+         75         25.479
+         95         75.265
+         99         143.46
+       99.5         184.94
+       99.9         320.71
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: NSF data aggregated from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager, et al. (2013) New England Journal of Medicine
+Atlas, et al. (2014) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1149	Nonempty: 1149	Complete: 1149
+Voxels: 329694	Nonempty: 329694	Complete: 328249
+Unique data values: 136162680
+ 
+Min: -1312.863	Max: 888.306	Mean: -0.351	Std: 21.183
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -134.41
+        0.5           -81.216
+          1           -63.577
+          5           -31.933
+         25           -8.2459
+         50        3.1861e-06
+         75             8.286
+         95            29.963
+         99            56.493
+       99.5            70.713
+       99.9            112.42
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: ie2 img data from Tor Wager's single trials Google Drive ("IE2_NEW"). Metadata from wagerlab/labdata/current/ie2/ HPC storage.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Jepma et al. (2018) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1330	Nonempty: 1330	Complete: 1330
+Voxels: 328798	Nonempty: 328798	Complete: 302216
+Unique data values: 124509004
+ 
+Min: -120.142	Max: 162.877	Mean: -0.210	Std: 2.134
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -14.757
+        0.5         -8.5044
+          1         -6.5994
+          5         -3.3219
+         25        -0.98972
+         50        -0.10738
+         75         0.66265
+         95          2.6676
+         99          5.2046
+       99.5          6.5986
+       99.9          11.106
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: bmrk3pain img data from Tor Wager's single trials Google Drive. Metadata also from wagerlab/labdata/current/BMRK3/ HPC storage
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager,  et al. (2013) New England Journal of Medicine
+Woo et al. (2015) PLoS Biology
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1699	Nonempty: 1699	Complete: 1699
+Voxels: 328798	Nonempty: 328798	Complete: 327472
+Unique data values: 135864812
+ 
+Min: -133.823	Max: 84.093	Mean: -0.006	Std: 0.545
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1             -3.469
+        0.5            -1.9328
+          1            -1.4777
+          5           -0.72485
+         25           -0.20535
+         50        -0.00043151
+         75            0.19939
+         95            0.69711
+         99             1.3839
+       99.5             1.7974
+       99.9             3.2719
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+ 
+Source: Romantic Pain data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Lopez-Sola, et al. (2019) Pain
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 480	Nonempty: 480	Complete: 480
+Voxels: 328798	Nonempty: 328798	Complete: 323776
+Unique data values: 82177956
+ 
+Min: -44.019	Max: 43.529	Mean: 0.071	Std: 0.742
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -4.6006
+        0.5         -2.3523
+          1         -1.7967
+          5        -0.88787
+         25        -0.22951
+         50        0.042391
+         75         0.35992
+         95          1.1072
+         99          2.0649
+       99.5          2.6096
+       99.9          4.5095
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: levoderm data from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Scott Shaefer PhD Dissertation (2016). see ~p.60
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1916	Nonempty: 1916	Complete: 1916
+Voxels: 326942	Nonempty: 326942	Complete: 270862
+Unique data values: 144500739
+ 
+Min: -85.376	Max: 89.908	Mean: 0.006	Std: 0.690
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -4.6443
+        0.5           -2.3335
+          1           -1.7441
+          5          -0.81805
+         25          -0.21384
+         50        7.8729e-16
+         75           0.22636
+         95           0.84039
+         99             1.738
+       99.5            2.3016
+       99.9            4.5592
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: bmrk5snd data from wagerlab/labdata/projects/bmrk5_painsound/. Img data from the first_level_all_trs_single_trials/ subjfolder. Metadata from the single_trial_output_scnlab_july2016/ subjfolder
+ 
+
+____________________________________________________________________________________________________________________________________________
+Losin, et al. (2019) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2160	Nonempty: 2160	Complete: 2160
+Voxels: 237066	Nonempty: 237066	Complete: 225403
+Unique data values: 125739412
+ 
+Min: -100.938	Max: 114.815	Mean: 0.207	Std: 1.094
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -7.1478
+        0.5         -3.3823
+          1         -2.4719
+          5         -1.1065
+         25        -0.23588
+         50         0.14712
+         75         0.60811
+         95          1.7401
+         99          3.2163
+       99.5          4.0346
+       99.9          6.9859
+
+ 
+Sound intensity ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: Stephan's Placebo data from from Tor Wager's single trials Google Drive
+ 
+
+____________________________________________________________________________________________________________________________________________
+Geunter, et al. (2013) Neuroimage
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 2386	Nonempty: 2386	Complete: 2386
+Voxels: 247020	Nonempty: 247020	Complete: 193522
+Unique data values: 122872893
+ 
+Min: -46.256	Max: 64.231	Mean: -0.004	Std: 0.611
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -3.3464
+        0.5           -2.1071
+          1           -1.6791
+          5          -0.89636
+         25          -0.29321
+         50        -0.0045611
+         75           0.28411
+         95            0.8911
+         99            1.6577
+       99.5            2.0697
+       99.9            3.2825
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: bmrk5pain data from wagerlab/labdata/projects/bmrk5_painsound/. Img data from the first_level_all_trs_single_trials/ subjfolder. Metadata from the single_trial_output_scnlab_july2016/ subfolder
+ 
+
+____________________________________________________________________________________________________________________________________________
+Losin, et al. (2019) Nature Human Behavior
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 3232	Nonempty: 3232	Complete: 3232
+Voxels: 237066	Nonempty: 237066	Complete: 225405
+Unique data values: 143236324
+ 
+Min: -128.846	Max: 173.216	Mean: 0.352	Std: 1.424
+ 
+    Percentiles     Values 
+    ___________    ________
+
+        0.1         -8.5114
+        0.5         -3.6723
+          1         -2.5995
+          5         -1.0999
+         25        -0.18898
+         50         0.21574
+         75         0.73814
+         95          2.2535
+         99          4.8069
+       99.5          6.3801
+       99.9          11.625
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+ 
+Source: ILCP data from ILCP_wani on Tor Wager single trials Google Drive.
+ 
+
+____________________________________________________________________________________________________________________________________________
+Woo, et al. (2017) Nature Communications
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1856	Nonempty: 1856	Complete: 1856
+Voxels: 328798	Nonempty: 328798	Complete: 327032
+Unique data values: 130612023
+ 
+Min: -21.172	Max: 36.946	Mean: -0.000	Std: 0.595
+ 
+    Percentiles      Values  
+    ___________    __________
+
+        0.1           -3.3143
+        0.5           -2.0725
+          1           -1.6558
+          5          -0.87807
+         25          -0.26636
+         50        -0.0011205
+         75           0.26427
+         95           0.88182
+         99            1.6585
+       99.5              2.07
+       99.9            3.2943
+
+ 
+Pain ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+Source: bmrk3warm img data from Tor Wager's single trials Google Drive. Metadata also from wagerlab/labdata/current/BMRK3 HPC storage
+ 
+
+____________________________________________________________________________________________________________________________________________
+Wager,  et al. (2013) New England Journal of Medicine
+Woo et al. (2015) PLoS Biology
+____________________________________________________________________________________________________________________________________________
+ 
+Summary of dataset
+______________________________________________________
+Images: 1502	Nonempty: 1502	Complete: 1502
+Voxels: 328798	Nonempty: 328798	Complete: 327472
+Unique data values: 129320822
+ 
+Min: -81.910	Max: 143.410	Mean: -0.006	Std: 0.497
+ 
+    Percentiles      Values   
+    ___________    ___________
+
+        0.1            -3.0485
+        0.5              -1.77
+          1            -1.3678
+          5           -0.68094
+         25           -0.19522
+         50        -0.00068394
+         75            0.19002
+         95            0.65406
+         99              1.275
+       99.5             1.6349
+       99.9             2.8324
+
+ 
+Warmth ratings in image_obj.Y
+Additional metadata in image_obj.additional_info struct
+Loaded images:
+</pre><img vspace="5" hspace="5" src="QC_main_02.png" alt=""> <img vspace="5" hspace="5" src="QC_main_03.png" alt=""> <h2 id="5">Bad datasets</h2><p>-</p><p>-</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+% We then compute SS_regressor following the method for computing R2
+% detailed here:
+% https://www.researchgate.net/publication/306347340_A_Pseudo_Decomposition_of_R2_in_Multiple_Linear_Regression
+% and here:
+% http://biol09.biol.umontreal.ca/borcardd/partialr2.pdf (no. 1)
+
+close all;
+clear all;
+
+warning('off','all')
+
+addpath(genpath('/projects/bope9760/CanlabCore/CanlabCore'));
+addpath(genpath('/projects/bope9760/spm12'));
+addpath(genpath('/projects/bope9760/single_trials_overview/repo')); % single_trials repo
+addpath('/work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo/'); % single trial data on blanca
+
+%% import and prep data
+% - concatenate subject data matrices from canlab_dataset objects
+%
+% - remove trials with high_vif or vif > 2.5, for consistency with subsequent
+%   imaging datasets
+%
+% - separate pain from non-pain datasets
+%
+% - remove trials with missing responses (rating == nan)
+%
+% - add subject and study ids
+
+st_datasets = {'nsf','bmrk3','bmrk4','bmrk5','remi','scebl','ie2','ie',...
+    'exp','levoderm','stephan','romantic','ilcp'};
+n_datasets = length(st_datasets);
+
+dat = cell(n_datasets,1);
+for i = 1:length(st_datasets)
+    this_dat = importdata([st_datasets{i}, '_dataset_obj.mat']);
+    dat{i} = array2table(cell2mat(this_dat.Event_Level.data'),...
+        'VariableNames',this_dat.Event_Level.names);
+    uniq_subject_id = this_dat.Subj_Level.id;
+    subject_id = [];
+    for j = 1:length(uniq_subject_id)
+        subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+    end
+    dat{i}.subject_id = subject_id';
+    % this removes non-thermal data, we'll add these back in later
+    dat{i} = dat{i}(~isnan(dat{i}.rating) & ~isnan(dat{i}.T),:);
+    
+    if contains(st_datasets{i},'bmrk5')
+        dat{i}.soundintensity = [];
+    end
+    fnames = dat{i}.Properties.VariableNames;
+    if any(ismember(fnames,'high_vif'))
+        dat{i}(dat{i}.high_vif == 1,:) = [];
+    end
+    if any(ismember(fnames,'vif'))
+        dat{i}(dat{i}.vif >= 2.5,:) = [];
+    end
+end
+
+% remove warm (non-painful) trials (rating <= 100)
+% note, this makes it harder to interpret some self regulation effects,
+% since many regulate down conditions end up getting dropped this way, but
+% because outcome measures mean different things at sub 100 vs. over 100,
+% we drop them for linear outcome modeling purposes
+bmrk3rating = dat{ismember(st_datasets,'bmrk3')}.rating - 100;
+dat{ismember(st_datasets,'bmrk3')}.rating = bmrk3rating;
+dat{ismember(st_datasets,'bmrk3')} = dat{ismember(st_datasets,'bmrk3')}(bmrk3rating > 0,:);
+
+% take care of non-pain data
+this_dat = importdata('bmrk3_dataset_obj');
+dat{end+1} = array2table(cell2mat(this_dat.Event_Level.data'),...
+        'VariableNames',this_dat.Event_Level.names);
+uniq_subject_id = this_dat.Subj_Level.id;
+subject_id = [];
+for j = 1:length(uniq_subject_id)
+    subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+end
+dat{end}.subject_id = subject_id';
+dat{end} = dat{end}(dat{end}.rating <= 100,:);
+
+this_dat = importdata('bmrk5_dataset_obj');
+dat{end+1} = array2table(cell2mat(this_dat.Event_Level.data'),...
+        'VariableNames',this_dat.Event_Level.names);
+uniq_subject_id = this_dat.Subj_Level.id;
+subject_id = [];
+for j = 1:length(uniq_subject_id)
+    subject_id = [subject_id, repmat(uniq_subject_id(j),1,size(this_dat.Event_Level.data{j},1))];
+end
+dat{end}.subject_id = subject_id';
+dat{end} = dat{end}(isnan(dat{end}.T) & ~isnan(dat{end}.rating),:);
+dat{end}.T = [];
+
+%c = seaborn_colors;
+%c = shuffles(c);
+
+%% plot experimental variance in each dataset
+% - We model subjects as fixed effects
+%
+% - We use backwards stepwise regression to select additional experimental 
+%   factors
+%
+% - Not all subject have trial sequence data, but for datasets where this
+%   is missing we provide the mean
+%
+% - model interactions in cases where these were key factors (e.g.
+%   plaebo*value in stephan's placebo dataset), but otherwise stick to
+%   linear effects.
+%
+% - adjust labels in pie plots to avoid overlapping numbers
+%
+% - use consistent units across datasets, and concatenate all data for a
+%   final aggregate analyses (top left pie plot). Use within-dataset
+%   z-scored pain ratings for aggregate analyses. Exclude non pain data.
+%
+% - standardize all variables before regression modeling to get
+%   standardized regression coefficients (necessary for partial R2
+%   calculation)
+%
+% Note that for agregate analysis "subject fixed effects" are colinear with
+% study effects, so you should expect the "subject effects" to explain a
+% disproportionate amount of the variance relative to what they explain in 
+% individual dataset analyses.
+c = colormap('lines');
+
+%
+% eval nsf
+%
+this_st_id = 1;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','overallN','siteN','runN'})),...
+    'Intercept',false);
+
+% compute partial r2
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:4
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = 'white'; % Subj fixed fx variance
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval bmrk3pain
+%
+this_st_id = 2;
+newdat_st = dat{this_st_id};
+
+newdat_st = newdat_st(~newdat_st.high_vif,:);
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','siteN','overallN','high_vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding','reg'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(3,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+f(2).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), 'pain\n'], '\n']));
+
+%
+% eval bmrk4
+%
+this_st_id = 3;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','siteN','runN','high_vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:8
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(4).Position = f(4).Position + [0,0.25,0];
+f(6).Position = f(6).Position - [0,0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% bmrk5pain
+%
+this_st_id = 4;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = '';
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), 'pain\n'], '\n']));
+
+%
+% remi
+%
+this_st_id = 5;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','runN','overallN','vif','placebo'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+drug_idx = ismember(partialR2.Row,{'drug'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding','open'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx)),sum(R2(drug_idx))],ones(5,1));
+for i = 2:2:10
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(4).Position = f(4).Position - [0.2,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+f(5).FaceColor = c(2,:); % drug variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval scebl
+%
+this_st_id = 6;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','overallN','cue','vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:8
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(4).Position = f(4).Position - [0.25,-0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval ie2
+%
+this_st_id = 7;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','high_vif','overallN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:8
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(4).Position = f(4).Position - [0.25,-0.25,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval ie
+%
+this_st_id = 8;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','siteN','runN','overallN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+f(2).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval_exp
+%
+this_st_id = 9;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','runN','siteN','vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:8
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval levoderm
+%
+this_st_id = 10;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','vif','reveal','conditioningN','runN','siteN','overallN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding','reveal'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+f(2).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval stephan
+%
+this_st_id = 11;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+t.int = zscore(t.placebo.*t.value);
+cov_names = [cov_names,'int'];
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'T','sid','rating','overallN','vif','runN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','int','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(3,:); % Sensitization/Habituation
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+f(2).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval romantic
+%
+this_st_id = 12;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','overallN','runN','T','high_vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:4
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(2).Position = f(2).Position - [-0.25,0,0];
+f(4).Position = f(4).Position - [0.25,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(3,:); % Sensitization/Habituation
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+f(2).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% eval ilcp
+%
+this_st_id = 13;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','cue','overallN','runN','vif'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:8
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance 
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+
+%
+% bmr3heat
+%
+this_st_id = 14;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','high_vif','overallN','siteN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(2).Position = f(2).Position - [-0.25,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+title(sprintf('bmrk3warm\n\n'));
+
+%
+% bmrk5snd
+%
+this_st_id = 15;
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,{'sid','rating','high_vif','vif','overallN','siteN'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T','soundintensity'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:6
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(2).Position = f(2).Position - [-0.3,0,0];
+f(4).Position = f(4).Position - [0.3,0,0];
+f = f(1:2:end);
+f(1).FaceColor = c(4,:); % sound
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(3).FaceColor = 'white'; % Subj fixed fx variance
+title(sprintf('bmrk5snd\n\n'));
+
+%
+% eval all pain
+%
+t = expand_metadata_table(dat{1:length(st_datasets)});
+for i = 1:length(t)
+    t{i}.st_id = cellstr(repmat(st_datasets{i},height(t{i}),1));
+    t{i}.rating = zscore(t{i}.rating);
+end
+t = tbl_vcat(t{:});
+[~,~,sid] = unique([char(t.subject_id), char(t.st_id)],'rows','stable');
+t.subject_id = sid;
+[~,~,st_id] = unique(char(t.st_id),'rows','stable');
+t.st_id = st_id;
+
+% manually set some defaults
+t.placebo(isnan(t.placebo)) = 0;
+t.drug(isnan(t.drug)) = 0;
+t.open(isnan(t.open)) = 0;
+t.open(t.placebo == 1) = 1; % all placebos are effectively "open" drug label in the sense used in the remifentanil study
+t.handholding(isnan(t.handholding)) = 0;
+t.reg(isnan(t.reg)) = 0;
+t.reveal(isnan(t.reveal)) = 0;
+t.social(isnan(t.social)) = 0;
+t.value(isnan(t.value)) = 0;
+t.ctrl(isnan(t.ctrl)) = 0;
+
+t.high_vif(isnan(t.high_vif)) = 0;
+t.vif(isnan(t.vif)) = 0;
+
+new_t = t(~t.high_vif | t.vif > 2.5,:);
+t = new_t;
+
+t.int = t.value.*t.placebo;
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(t);
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar',cov_names(~ismember(cov_names,...
+    {'conditioningN','high_vif','rating',...
+    'soundintensity','st_id','subject_id','vif','reveal'})),...
+    'Intercept',false);
+
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sens_idx = ismember(partialR2.Row,{'siteN','overallN','runN'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+drug_idx = ismember(partialR2.Row,'drug');
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), 1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx)),sum(R2(drug_idx))],ones(5,1));
+for i = 2:2:10
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f(4).Position = f(4).Position - [0.1,-0.1,0];
+f(6).Position = f(6).Position - [0.1,0.2,0];
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = c(3,:); % Sensitization/Habituation
+f(4).FaceColor = 'white'; % Subj fixed fx variance
+f(3).FaceColor = c(1,:); % cog variance
+f(5).FaceColor = c(2,:); % drug variance
+title(sprintf('Pain Datasets (n=13) \n Aggregate\n'))
+
+l = legend({'T','Sens/Habit','Cog','Subject','Drug'},'location','southwest');
+l.Position = l.Position - [0.17,0,0,0];
+set(get(gca,'Legend'),'FontSize',10)
+
+p = get(gcf,'Position');
+set(gcf,'Position',[p(1:2), 1248, 966]);
+
+%% Quantify signal strength using SVR brain decoding
+% - obfuscate dataset identity to discourage chery picking for future
+%   analysis based on SNR. Any studies with SNR so low as to suggest
+%   corrupt data will be identified. Otherwise, the purpose of what follows
+%   is to provide guidelines for what one can expect in terms of decoding
+%   performance when using linear MVPA methods.
+%
+% - control for subject fixed effects, since experience suggests between
+%   subject effects aren't detected very well. We will print out raw r^2
+%   values for predicted vs. observed though for comparison for those who
+%   are curious.
+
+st_datasets = {'nsf','bmrk3pain','bmrk4','bmrk5pain','remi','scebl','ie2','ie',...
+    'exp','levoderm','stephan','romantic','ilcp','bmrk3warm','bmrk5snd'};
+
+% obfuscate identity
+st_datsets = st_datasets(randperm(length(st_datasets)));
+
+[cverr, stats, optout, obs, subject_id] = deal(cell(length(st_datasets),1));
+if ~isempty(gcp('nocreate'))
+    delete(gcp('nocreate'))
+end
+parpool(16);
+parfor i = 1:length(st_datasets)
+    warning('off','all')
+    % capture output to prevent clues that might reveal which dataset this
+    % is
+    this_data = load_image_set(st_datasets{i});
+    
+    % remove any trials lacking responses (dat.Y = nan), or with high VIF
+    good_trials = ones(length(this_data.Y),1);
+    
+    fnames = this_data.metadata_table.Properties.VariableNames;
+    if any(ismember(fnames,'high_vif'))
+        good_trials(this_data.metadata_table.high_vif == 1) = 0;
+    end
+    if any(ismember(fnames,'vif'))
+        good_trials(this_data.metadata_table.vif >= 2.5) = 0;
+    end
+    good_trials(isnan(this_data.Y)) = 0;
+    good_trials = logical(good_trials);
+    
+    this_data = this_data.get_wh_image(good_trials);
+    
+    % specify folds manually to maintain subject groupings across fold
+    % slicings
+    [~,~,subject_id{i}] = unique(char(this_data.metadata_table.subject_id),'rows','stable');
+    cv = cvpartition2(ones(size(this_data.dat,2),1), 'KFOLD', 5, 'Stratify', subject_id{i});
+    fold_labels = zeros(size(this_data.dat,2),1);
+    for j = 1:cv.NumTestSets
+        fold_labels(cv.test(j)) = j;
+    end
+    
+    [cverr{i},stats{i},optout{i}] = this_data.predict('algorithm_name', 'cv_svr', 'nfolds', fold_labels, 'error_type', 'mse', 'useparallel', 0, 'verbose', 0);
+    obs{i} = this_data.Y;
+end
+
+for i = 1:length(st_datasets)
+    % plot results
+    figure(2)
+    subplot(ceil(sqrt(n_datasets)), ceil((n_datasets)/ceil(sqrt(n_datasets))), i);
+    r2 = corr(stats{i}.yfit, obs{i}).^2;
+    f = pie(r2);
+    f = f(1:2:end);
+    f(1).FaceColor = [0.5,0.5,0.5]; % svr
+    if ismember(st_datasets{i},{'bmrk3warm','bmrk5pain'})
+        title(sprintf('Random dataset %d\n(nonpain)\n', i));
+    else
+        title(sprintf('Random dataset %d\n\n', i));
+    end
+end
+save('st_datasets.mat','st_datasets','cverr','stats','optout','obs','subject_id');
+
+p = get(gcf,'Position');
+set(gcf,'Position',[p(1:2), 1248, 966]);
+
+%% Bad datasets
+% -
+% 
+% -
+##### SOURCE END #####
+--></body></html>
