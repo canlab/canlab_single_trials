@@ -110,14 +110,14 @@ If approved for access to a private dataset you can access it using functions pr
 
 - the URL to the file (which anybody with access to private repo can offer you, by inspecting datasets/brain/download_dataset.m therein)
 - an md5 checksum (optional)
-- a decryption key
+- a decryption key, &lt;decriptionKey&gt;
 - the *dataset_obj.mat data of behavioral data (optional, anybody with access to the private repo can get you this, they're in datasets/behavior/ therein)
 
-Download the dataset file to <downloadedFilePath>
+Download the dataset file to &lt;downloadedFilePath&gt;
 run,
-decrypt_dataset(<downloadedFilePath>, <decryptedFilePath>, 'key', decryptionKey);
+decrypt_dataset(&lt;downloadedFilePath&gt;, &lt;decryptedFilePath&gt;, 'key', &lt;decryptionKey&gt;);
 
 Check md5 if you like however you would normally do that. The file can now be imported into matlab using 
-data = importdata(<decryptedFilePath>);
+data = importdata(&lt;decryptedFilePath&gt;);
 
 The result is an fmri_data_st object identical to what load_image_set provides for public datasets. The metadata_table property will provide all the same trial level information provided by the *dataset_obj.mat file, but if you want subject or study level information the dataset_obj file may be useful.
