@@ -27,10 +27,7 @@ Dependencies (add these to your path first, and ensure they're up to date)
 
 Clone the repo, add it to your Matlab path. If single trial dataset are available, add those to your matlab path as well (otherwise they will be downloaded). 
 
-If working on Discovery or Blanca please add the appropriate directory to your Matlab path rather than autodownloading, otherwise we'll end up with multiple redundant copies and waste shared resources:
-
-- Discovery (Dartmouth): /dartfs/rc/lab/C/CANlab/labdata/projects/canlab_single_trials_for_git_repo
-- Blanca (CU): /work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo
+If you have access to canlab_single_trials_private please also add that to your path and refer to the setup section of its README to complete installation.
 
 Downloaded datasets come from the web and are automatically downloaded by our downloader method.
 
@@ -106,3 +103,20 @@ dataset objects have,
 - for IE and IE2 there's age, gender, race and handedness information Subject Level information
 - all data was checked for sensible experimental effects using mixed models.
 
+### Using private datasets ###
+
+If approved for access to a private dataset you can access it using functions provided by this library. You will need
+
+- the URL to the file (which anybody with access to private repo can offer you, by inspecting datasets/brain/download_dataset.m therein)
+- an md5 checksum (optional)
+- a decryption key
+- the *dataset_obj.mat data of behavioral data (optional, anybody with access to the private repo can get you this, they're in datasets/behavior/ therein)
+
+Download the dataset file to <downloadedFilePath>
+run,
+decrypt_dataset(<downloadedFilePath>, <decryptedFilePath>, 'key', decryptionKey);
+
+Check md5 if you like however you would normally do that. The file can now be imported into matlab using 
+data = importdata(<decryptedFilePath>);
+
+The result is an fmri_data_st object identical to what load_image_set provides for public datasets. The metadata_table property will provide all the same trial level information provided by the *dataset_obj.mat file, but if you want subject or study level information the dataset_obj file may be useful.
