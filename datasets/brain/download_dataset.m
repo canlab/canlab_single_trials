@@ -77,13 +77,12 @@ function path = download_dataset(dataset_name, varargin)
         case 'ilcp'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24214928');
         otherwise
-            #if exist('download_private_dataset')
-            #    % this function is provided by canlab_single_trials_private for in house use
-            #    download_private_dataset(dataset_name,'forcedl',varargin{:})
-            #else
-            #    error(['Dataset ', dataset_name, ' download not configured']);
-            #end
-            error(['Dataset ', dataset_name, ' download not configured']);
+            if exist('download_private_dataset')
+                % this function is provided by canlab_single_trials_private for in house use
+                download_private_dataset(dataset_name,'forcedl','verbose',0);
+            else
+                error(['Dataset ', dataset_name, ' download not configured']);
+            end
     end
     
     path = which(outFile);

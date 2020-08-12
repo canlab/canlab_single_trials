@@ -21,7 +21,7 @@ function check = wrongmd5(file, varargin)
 
     % identify the md5 sum we want for the current file
     fname = dir(file);
-    [~,basename] = fileparts(file)
+    [~,basename] = fileparts(file);
     
     % import all md5 checkums
     fid = fopen([basename '.md5']);
