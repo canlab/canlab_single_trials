@@ -9,15 +9,32 @@
 %
 %   outFile - character array path to location to save output file
 %
+% Optional Input ::
+%
+%   'key'   - followed by a string specifying the password to use for decryption
+%
 % Dependencies ::
 %
 %  AES class
 %   - javaMethodWrapper class
 %
-function decrypt_dataset(inFile, outFile)
-    keyfile = fopen('single_trials_aes_key.txt');
-    secret = fscanf(keyfile,'%s');
-    fclose(keyfile);
+function decrypt_dataset(inFile, outFile, varargin)
+
+    secret = [];
+    for i = 1:length(varargin)
+        if ischar(varargin{i})
+            switch varargin{i}
+                case 'key':
+                    secret = varargin{i+1};
+            end
+        end
+    end
+
+    if isempty(secret)
+        keyfile = fopen('single_trials_aes_key.txt');
+        secret = fscanf(keyfile,'%s');
+        fclose(keyfile);
+    end
     
     cipher = AES(secret,'SHA-256');
     

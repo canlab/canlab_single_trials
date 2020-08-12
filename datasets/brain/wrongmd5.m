@@ -18,14 +18,17 @@ function check = wrongmd5(file, varargin)
     end
                     
     if verbose, disp('Performing MD5 check. This may take several minutes for large datasets...'); end
+
+    % identify the md5 sum we want for the current file
+    fname = dir(file);
+    [~,basename] = fileparts(file)
     
     % import all md5 checkums
-    fid = fopen('checksums.md5');
+    fid = fopen([basename '.md5']);
     md5s = textscan(fid,'%s');
     fclose(fid);
     
     % identify the md5 sum we want for the current file
-    fname = dir(file);
     md5 = md5s{1}{find(contains(md5s{1},fname.name))-1};
     
     % perform the comparison

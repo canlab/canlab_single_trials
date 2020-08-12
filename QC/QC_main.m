@@ -1,3 +1,13 @@
+% This script should be updated and rerun whenever a new dataset is added to the repo.
+% append a name to st_dataset variable, add a section to model your dataset
+% dataset below following the template provided as a comment block, 
+%
+% This script critically depends on the <datasetname>_dataset_obj.mat files
+% in datasets/behavior, not on the fMRI data, so make sure you have your
+% *dataset_obj.mat file in the right place. You should not be adding
+% datasets to this repo without a dataset_obj.mat file.
+
+%
 % We then compute SS_regressor following the method for computing R2
 % detailed here:
 % https://www.researchgate.net/publication/306347340_A_Pseudo_Decomposition_of_R2_in_Multiple_Linear_Regression
@@ -26,8 +36,8 @@ addpath('/work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_
 %
 % - add subject and study ids
 
-st_datasets = {'nsf','bmrk3','bmrk4','bmrk5','remi','scebl','ie2','ie',...
-    'exp','levoderm','stephan','romantic','ilcp'};
+st_datasets = {'nsf','bmrk3','bmrk4','scebl','ie2','ie',...
+    'exp','stephan','romantic','ilcp'};
 n_datasets = length(st_datasets);
 
 dat = cell(n_datasets,1);
@@ -120,6 +130,51 @@ dat{end}.T = [];
 % disproportionate amount of the variance relative to what they explain in 
 % individual dataset analyses.
 c = colormap('lines');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TEMPLATE (copy for new datasets) %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%{
+this_st_id = ???; % index corresponding to entry in st_dataset variable
+newdat_st = dat{this_st_id}; 
+
+[t, cov_names] = get_std_tbl_with_fixed_fx(newdat_st);
+IV = ???; % cell array containing column header names of t to treat as IV
+
+m = fitlm(t,'ResponseVar','rating',...
+    'PredictorVar', IV,...
+    'Intercept',false);
+
+% compute partial r2
+partialR2 = partialRsquared(m);
+if abs(sum(partialR2.partialR2) - m.Rsquared.Ordinary) > 0.0001
+    warning(['Partial R2 computation doesn''t seem to be working for study ' int2str(this_st_id)]);
+end
+
+R2 = table2array(partialR2);
+
+% here we create a pie graph with four slices, experimental stimulus 
+% components, sensitization and habituation components, cognitive
+% manipulation components and subject effects. These are just different
+% sums of R2 from the R2 variable above. This is mostly done automatically
+% below, but check the variable names in m to ensure all relevant variables
+% are accounted for below. you may need to modify this slightly.
+figure(1)
+T_idx = ismember(partialR2.Row,{'T'});
+sid_idx = find(contains(partialR2.Row,'sub'));
+cog_idx = ismember(partialR2.Row,{'cue','ctrl','social','placebo','value','reveal','handholding'});
+subplot(ceil(sqrt(1+n_datasets)), ceil((1+n_datasets)/ceil(sqrt(1+n_datasets))), this_st_id+1);
+f = pie([sum(R2(T_idx)),sum(R2(sens_idx)),sum(R2(cog_idx)),sum(R2(sid_idx))],ones(4,1));
+for i = 2:2:4
+    if strmatch(f(i).String,'0%')
+        f(i).String = ''
+    end
+end
+f = f(1:2:end);
+f(1).FaceColor = c(7,:); % Temp
+f(2).FaceColor = 'white'; % Subj fixed fx variance
+title(sprintf([[strrep(strrep(st_datasets{this_st_id},'_data.mat',''),'_',' '), '\n'], '\n']));
+%}
 
 %
 % eval nsf
