@@ -2,11 +2,13 @@
 
 This repository is designed for education and model and algorithm development for multivariate pattern analysis (MVPA). Its purpose is to provide access to a currated dataset in a homogenous format suitable for immediate MVPA applications.
 
-This repository will download (and decrypt) single trial data from the cloud if it is unavailable, and directly provides canlab_dataset objects with study metadata.
+This repository will download single trial data from the cloud if it is unavailable, and directly provides canlab_dataset objects with study metadata.
 
 This repo also provides a set of convenience functions for loading and working with the single trials datasets (see "notable functions"), including several overloaded methods and classes designed as drop in replacements that will seemlessly integrate into the typical canlabCore workflow.
 
 A simple demonstration of using this repo for MVPA algorithm development is illustrated in the [CANLab walkthrough script](https://canlab.github.io/_pages/canlab_single_trials_demo/demo_norming_comparison.html) at canlab.github.io.
+
+Please note, some datasets available in house have not yet been made public, and you may see occasional references to these datasets. These datasets will be made available down the line, but if you wish to have access to them sooner, please contact Prof Tor D Wager. For the most part they are available upon request, fully currated, and consistently formated, but simply lack sufficient documentation for us to feel they're ready to be made public at this time.
 
 ## Data Overview
 ### Experimental factors affecting outcome measure (R<sup>2</sup>)
@@ -30,7 +32,7 @@ If working on Discovery or Blanca please add the appropriate directory to your M
 - Discovery (Dartmouth): /dartfs/rc/lab/C/CANlab/labdata/projects/canlab_single_trials_for_git_repo
 - Blanca (CU): /work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo
 
-Downloaded datasets come from the web in encrypted form and are automatically decrypted by downloader methods using built in credentials. Encryption capabilites are provided for developers, who should refer to the developer [guidelines](development.md).
+Downloaded datasets come from the web and are automatically downloaded by our downloader method.
 
 ## Usage
 
@@ -67,14 +69,10 @@ The following are available as fmri_data objects (cast to fmri_data_st objects i
 - bmrk3pain
 - bmrk3warm
 - bmrk4
-- bmrk5heat
-- bmrk5snd
 - exp
 - ie
 - ie2
 - ilcp
-- levoderm
-- remi
 - romantic
 - scebl
 - stephan
@@ -86,45 +84,25 @@ single trial fmri_data objects have,
 - trial metadata (e.g. cues, stimulus intensity, or other manipulations) in fmri_data.metadata_table field
 - Relevant citations in fmri_data.additional_info.references
 - source notes indicating where img and metadata were found (disambiguating where needed, e.g. bmrk4_smoothed_withbasis is indicated in source_notes for bmrk4).
-- are subdivided by stimulus modality (e.g. bmrk3, bmrk5)
+- are subdivided by stimulus modality (e.g. bmrk3)
 
 ### Available canlab_dataset objects
 \*Notice that dataset objects are not subdivided by modality.
 - nsf
 - bmrk3*
 - bmrk4
-- bmrk5*
 - exp
 - ie
 - ie2
 - ilcp
-- levoderm
-- remi
 - romantic
 - scebl
 - stephan
 
 dataset objects have,
 - all relevant experimental variables, coded in a consistent fashion across studies
-- coding scheme descriptions for any esoteric entries (e.g. 'open' in REMI or 'reveal' in stephan placebo)
+- coding scheme descriptions for any esoteric entries (e.g. 'reveal' in stephan placebo)
 - dataset references to cite
-- source files for generating dataset objects, to trace any misentered data if any is found, or to facilitate addition of newfound data when it becomes available.
-- for BMRK5, IE and IE2 there's age, gender, race and handedness information Subject Level information
-- for REMI there's average dose Subject Level information
-- all data was checked for sensible experimental effects using mixed models. Results documented as comments in src files
+- for IE and IE2 there's age, gender, race and handedness information Subject Level information
+- all data was checked for sensible experimental effects using mixed models.
 
-### Additional datasets
-See [development](development.md) for guidelines regarding addition of new datasets
-
-## Dataset sharing via github
-While the purpose of this repository is not primarily data distribution, it does provide a model of how data can easily paired as a sidecar to a private github repository.
-
-Datasets in this repository are not on github, but access to them is as-if they were. the load_\<datasetName\> functions automatically handle the missing data scenario by downloading encrypted datasets from a hardcoded location. Thus access to this repository is necessary and sufficient to acquire the data. 
-  
-This principle is easily extended to other datasets aside from those here, and I would encourage other people to adopt these methods and the code in this library to facilitate sharing companion data to github repositories, just don't put your data here if it's not consistent with the single trials format. 
-
-We use a single encryption key for all datasets associated with this repository for simplicity, but the AES class provided here is compatible with arbitrary keys. Thus, if you want to adopt this repo's strategy for data sharing, simple take that class (and the javaMethodWrapper class dependency), encrypt a file with a password of your choice as indicated in the AES class help documentation, upload your encrypted file somewhere public, and create a matlab function (containing your password) which downloads and decrypts the file. Then any github repository with that file and the AES class becomes necessary and sufficient for accessing your data.
-
-## Troubleshooting
-
-If JavaMethodWrapper gives you an error when you try to load/download a dataset you should make sure you have the latest version of Matlab. Issues have been reported with Matlab 2015 under Windows and Matlab 2018b under mac, which were resolved with "in the AES.m I changed  import java.util.Base64; to  import java.util.Base64.\*; I think there was another one but I can't recall". This repo was developed under Matlab 2019b and redhat Linux.
