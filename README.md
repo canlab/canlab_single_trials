@@ -1,6 +1,6 @@
 # CANLab Single Trials Repository 
 
-This repository is designed for education and model and algorithm development for multivariate pattern analysis (MVPA). Its purpose is to provide access to a currated dataset in a homogenous format suitable for immediate MVPA applications.
+This repository is designed for education and model and algorithm development for multivariate pattern analysis (MVPA) in Matlab. Its purpose is to provide access to a currated dataset in a homogenous format suitable for immediate MVPA applications.
 
 This repository will download single trial data from the cloud if it is unavailable, and directly provides canlab_dataset objects with study metadata.
 
