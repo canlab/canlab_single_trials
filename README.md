@@ -59,7 +59,7 @@ extends load_image_set()
 - Auto converts datasets to type fmri_data_st.
 - Auto downloads missing datasets (after user prompt). 
 - Optional: md5 check
-- support importing all datasets in a single fmri_data_st object: dat = load_image_set('all_single_trials');
+- If you have access to canlab_single_trials_private, supports importing all datasets in a single fmri_data_st object: dat = load_image_set('all_single_trials');
 
 ### Available fmri_data (or fmri_data_st) datasets 
 The following are available as fmri_data objects (cast to fmri_data_st objects if imported using load_image_set()). Use explicitly with load_image_set(). e.g. load_image_set('nsf')
