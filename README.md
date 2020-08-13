@@ -130,4 +130,4 @@ Additionally, we would appreciate being notified of any new publications which u
 
 ## Troubleshooting
 
-Please contact @bogpetre for help with technical issues related to this repository.
+Please contact [Bogdan Petre]( https://github.com/bogpetre ) for help with technical issues related to this repository.
