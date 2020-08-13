@@ -23,8 +23,8 @@ Caution: in the aggregated dataset analysis the "subjects" wedge includes datase
 ## Setup 
 
 Dependencies (add these to your path first, and ensure they're up to date)
-- spm12
-- CanlabCore (github.com/canlab/canlabCore)
+- [spm12](https://www.fil.ion.ucl.ac.uk/spm/software/spm12/)
+- [CanlabCore](https://github.com/canlab/canlabCore)
 
 Clone the repo, add it to your Matlab path. If single trial dataset are available, add those to your matlab path as well (otherwise they will be downloaded). 
 
