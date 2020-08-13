@@ -8,7 +8,7 @@ This repo also provides a set of convenience functions for loading and working w
 
 A simple demonstration of using this repo for MVPA algorithm development is illustrated in the [CANLab walkthrough script](https://canlab.github.io/_pages/canlab_single_trials_demo/demo_norming_comparison.html) at canlab.github.io.
 
-Please note, some datasets available in house have not yet been made public, and you may see occasional references to these datasets. These datasets will be made available down the line, but if you wish to have access to them sooner, please contact Prof Tor D Wager. For the most part they are available upon request, fully currated, and consistently formated, but simply lack sufficient documentation for us to feel they're ready to be made public at this time.
+Please note, some datasets available in house have not yet been made public, and you may see occasional references to these datasets. These datasets will be made available down the line, but if you wish to have access to them sooner, please contact Prof Tor D Wager. For the most part they are available upon request, fully currated, and consistently formated, but simply lack sufficient documentation for us to feel they're ready to be made public at this time. For a list of currently available public datasets see "Available fmri_data (or fmri_data_st) datasets" below.
 
 ## Data Overview
 ### Experimental factors affecting outcome measure (R<sup>2</sup>)
