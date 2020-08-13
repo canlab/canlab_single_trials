@@ -62,18 +62,18 @@ extends load_image_set()
 - If you have access to canlab_single_trials_private, supports importing all datasets in a single fmri_data_st object: dat = load_image_set('all_single_trials');
 
 ### Available fmri_data (or fmri_data_st) datasets 
-The following are available as fmri_data objects (cast to fmri_data_st objects if imported using load_image_set()). Use explicitly with load_image_set(). e.g. load_image_set('nsf')
-- nsf
-- bmrk3pain
-- bmrk3warm
-- bmrk4
-- exp
-- ie
-- ie2
-- ilcp
-- romantic
-- scebl
-- stephan
+The following are available as fmri_data objects (cast to fmri_data_st objects if imported using load_image_set()). Use explicitly with load_image_set(). e.g. load_image_set('nsf'). Links are provided below, but we encourage you to let load_image_set() download these rather than doing so manually.
+- [nsf](https://ndownloader.figshare.com/files/24165545)
+- [bmrk3pain](https://ndownloader.figshare.com/files/24211439)
+- [bmrk3warm](https://ndownloader.figshare.com/files/24211832)
+- [bmrk4](https://ndownloader.figshare.com/files/24212039)
+- [exp](https://ndownloader.figshare.com/files/24212432)
+- [ie](https://ndownloader.figshare.com/files/24215003)
+- [ie2](https://ndownloader.figshare.com/files/24214952)
+- [ilcp](https://ndownloader.figshare.com/files/24214928)
+- [romantic](https://ndownloader.figshare.com/files/24214487)
+- [scebl](https://ndownloader.figshare.com/files/24213212)
+- [stephan](https://ndownloader.figshare.com/files/24211892)
 
 single trial fmri_data objects have,
 - all trials (including non-response trials with nan entries), unmodified, taken from single trials google drive
