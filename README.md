@@ -121,3 +121,9 @@ Check md5 if you like however you would normally do that. The file can now be im
 data = importdata(&lt;decryptedFilePath&gt;);
 
 The result is an fmri_data_st object identical to what load_image_set provides for public datasets. The metadata_table property will provide all the same trial level information provided by the *dataset_obj.mat file, but if you want subject or study level information the dataset_obj file may be useful.
+
+## References
+
+Please refer to the \*.additional_info.references field of each fmri_data object (i.e. each dataset) for appropriate references pertaining to said dataset. Please cite these references if using these datasets in your own work.
+
+Additionally, we would appreciate being notified of any new publications which use this work. Prof Tor Wager can currently best reached via his institutional email at Dartmouth College.
