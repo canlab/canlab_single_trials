@@ -126,7 +126,7 @@ The result is an fmri_data_st object identical to what load_image_set provides f
 
 Please refer to the \*.additional_info.references field of each fmri_data object (i.e. each dataset) for appropriate references pertaining to said dataset. Please cite these references if using these datasets in your own work.
 
-Additionally, we would appreciate being notified of any new publications which use this work. Prof Tor Wager can currently best be reached via his institutional email at Dartmouth College.
+Additionally, we would appreciate being notified of any new publications which use this work. As of August 2020, Prof Tor Wager can best be reached via his institutional email at Dartmouth College.
 
 ## Troubleshooting
 
