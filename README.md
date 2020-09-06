@@ -1,6 +1,6 @@
 # CANLab Single Trials Repository 
 
-This repository is designed for education and model and algorithm development for multivariate pattern analysis (MVPA). Its purpose is to provide access to a currated dataset in a homogenous format suitable for immediate MVPA applications.
+This repository is designed for education and model and algorithm development for multivariate pattern analysis (MVPA) in Matlab. Its purpose is to provide access to a currated dataset in a homogenous format suitable for immediate MVPA applications.
 
 This repository will download single trial data from the cloud if it is unavailable, and directly provides canlab_dataset objects with study metadata.
 
@@ -8,7 +8,7 @@ This repo also provides a set of convenience functions for loading and working w
 
 A simple demonstration of using this repo for MVPA algorithm development is illustrated in the [CANLab walkthrough script](https://canlab.github.io/_pages/canlab_single_trials_demo/demo_norming_comparison.html) at canlab.github.io.
 
-Please note, some datasets available in house have not yet been made public, and you may see occasional references to these datasets. These datasets will be made available down the line, but if you wish to have access to them sooner, please contact Prof Tor D Wager. For the most part they are available upon request, fully currated, and consistently formated, but simply lack sufficient documentation for us to feel they're ready to be made public at this time.
+Please note, some datasets available in house have not yet been made public, and you may see occasional references to these datasets. These datasets will be made available down the line, but if you wish to have access to them sooner, please contact Prof Tor D Wager. For the most part they are available upon request, fully currated, and consistently formated, but simply lack sufficient documentation for us to feel they're ready to be made public at this time. For a list of currently available public datasets see "Available fmri_data (or fmri_data_st) datasets" below.
 
 ## Data Overview
 ### Experimental factors affecting outcome measure (R<sup>2</sup>)
@@ -23,8 +23,8 @@ Caution: in the aggregated dataset analysis the "subjects" wedge includes datase
 ## Setup 
 
 Dependencies (add these to your path first, and ensure they're up to date)
-- spm12
-- CanlabCore (github.com/canlab/canlabCore)
+- [spm12](https://www.fil.ion.ucl.ac.uk/spm/software/spm12/)
+- [CanlabCore](https://github.com/canlab/canlabCore)
 
 Clone the repo, add it to your Matlab path. If single trial dataset are available, add those to your matlab path as well (otherwise they will be downloaded). 
 
@@ -59,21 +59,21 @@ extends load_image_set()
 - Auto converts datasets to type fmri_data_st.
 - Auto downloads missing datasets (after user prompt). 
 - Optional: md5 check
-- support importing all datasets in a single fmri_data_st object: dat = load_image_set('all_single_trials');
+- If you have access to canlab_single_trials_private, supports importing all datasets in a single fmri_data_st object: dat = load_image_set('all_single_trials');
 
 ### Available fmri_data (or fmri_data_st) datasets 
-The following are available as fmri_data objects (cast to fmri_data_st objects if imported using load_image_set()). Use explicitly with load_image_set(). e.g. load_image_set('nsf')
-- nsf
-- bmrk3pain
-- bmrk3warm
-- bmrk4
-- exp
-- ie
-- ie2
-- ilcp
-- romantic
-- scebl
-- stephan
+The following are available as fmri_data objects (cast to fmri_data_st objects if imported using load_image_set()). Use explicitly with load_image_set(). e.g. load_image_set('nsf'). Links are provided below, but we encourage you to let load_image_set() download these rather than doing so manually.
+- [nsf](https://ndownloader.figshare.com/files/24165545)
+- [bmrk3pain](https://ndownloader.figshare.com/files/24211439)
+- [bmrk3warm](https://ndownloader.figshare.com/files/24211832)
+- [bmrk4](https://ndownloader.figshare.com/files/24212039)
+- [exp](https://ndownloader.figshare.com/files/24212432)
+- [ie](https://ndownloader.figshare.com/files/24215003)
+- [ie2](https://ndownloader.figshare.com/files/24214952)
+- [ilcp](https://ndownloader.figshare.com/files/24214928)
+- [romantic](https://ndownloader.figshare.com/files/24214487)
+- [scebl](https://ndownloader.figshare.com/files/24213212)
+- [stephan](https://ndownloader.figshare.com/files/24211892)
 
 single trial fmri_data objects have,
 - all trials (including non-response trials with nan entries), unmodified, taken from single trials google drive
@@ -121,3 +121,13 @@ Check md5 if you like however you would normally do that. The file can now be im
 data = importdata(&lt;decryptedFilePath&gt;);
 
 The result is an fmri_data_st object identical to what load_image_set provides for public datasets. The metadata_table property will provide all the same trial level information provided by the *dataset_obj.mat file, but if you want subject or study level information the dataset_obj file may be useful.
+
+## References
+
+Please refer to the \*.additional_info.references field of each fmri_data object (i.e. each dataset) for appropriate references pertaining to said dataset. Please cite these references if using these datasets in your own work.
+
+Additionally, we would appreciate being notified of any new publications which use this work. As of August 2020, Prof Tor Wager can best be reached via his institutional email at Dartmouth College.
+
+## Troubleshooting
+
+Please contact [Bogdan Petre]( https://github.com/bogpetre ) for help with technical issues related to this repository.
