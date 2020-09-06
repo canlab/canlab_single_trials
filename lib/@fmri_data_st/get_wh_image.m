@@ -19,6 +19,7 @@ end
 function newdat = slice_struct(dat, imgcnt, idx, varargin)
     newdat = dat;
     fnames = fieldnames(dat);
+    top_fnames = fieldnames(fmri_data)';
     for i = 1:length(fnames)
         this_fname = fnames{i};
         this_field = dat.(this_fname);
@@ -27,7 +28,7 @@ function newdat = slice_struct(dat, imgcnt, idx, varargin)
                 ffnames = {varargin{:}, this_fname}; % this is used for throwing informative errors
                 newdat.(this_fname) = slice_struct(this_field, imgcnt, idx, ffnames{:});
             end
-        else
+        elseif ~ismember(this_fname,top_fnames) % prevent it from modifying toplvl fields
             ffnames = {varargin{:}, this_fname}; % this is needed for throwing informative errors
             newdat.(this_fname) = get_slice(this_field, imgcnt, idx, ffnames{:});
         end
