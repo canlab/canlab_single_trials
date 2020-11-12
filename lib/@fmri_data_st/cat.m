@@ -145,8 +145,8 @@ function dat = expand_struct(dat)
         these_fnames = fieldnames(dat{i});
         missing = find(~ismember(uniq_fnames, these_fnames));
         for j = 1:length(missing)
-            this_fname = uniq_fnames(missing(j));
-            dat{i}.(this_fname) = nan;
+            this_fname = uniq_fnames{missing(j)};
+            eval(['dat{' int2str(i) '}.' this_fname ' = nan;']);
         end
     end
 end
@@ -192,15 +192,19 @@ function ad_info = merge_struct(ad_info, imgcnt)
                     catMethod = 'horizontal';
                 end
             end
-               
-            switch catMethod
-                case 'vertical'
-                    ad_info(1).(fnames{i}) = cat(1,dat{:});
-                case 'horizontal'
-                    ad_info(1).(fnames{i}) = cat(2,dat{:});
-                otherwise
-                    warning('unhandeled datatype in struct. Erasing entry');
-                    ad_info(1).(fnames{i}) = [];
+            
+            try 
+                switch catMethod
+                    case 'vertical'
+                        ad_info(1).(fnames{i}) = cat(1,dat{:});
+                    case 'horizontal'
+                        ad_info(1).(fnames{i}) = cat(2,dat{:});
+                    otherwise
+                        warning('unhandeled datatype in struct. Erasing entry');
+                        ad_info(1).(fnames{i}) = [];
+                end
+            catch
+                warning(sprintf('Error merging subfield ''%s''. Skipping. Please merge manually post-hoc.',fnames{i}));
             end
         end
     end
