@@ -144,9 +144,16 @@ function dat = expand_struct(dat)
     for i = 1:length(dat)
         these_fnames = fieldnames(dat{i});
         missing = find(~ismember(uniq_fnames, these_fnames));
+        if isempty(dat{i})
+            dat{i} = struct('');
+        end
         for j = 1:length(missing)
             this_fname = uniq_fnames{missing(j)};
-            eval(['dat{' int2str(i) '}.' this_fname ' = nan;']);
+            if isempty(dat{i})
+                dat{i} = struct(this_fname,nan);
+            else
+                eval(['dat{' int2str(i) '}.' this_fname ' = nan;']);
+            end
         end
     end
 end
