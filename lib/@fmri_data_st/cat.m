@@ -110,6 +110,9 @@ function dat = expand_struct(dat)
     fnames = {};
     isStruct = [];
     for i = 1:length(dat)
+        if isempty(dat{i})
+            dat{i} = struct('');
+        end
         newfnames = fieldnames(dat{i});
         fnames = [fnames, newfnames];
         for j = 1:length(newfnames)
