@@ -16,7 +16,7 @@
 %
 % Written by Bogdan Petre, sometime 2019
 classdef cvpartition2 < cvpartition
-    properties
+    properties (SetAccess = protected)
         sid;
     end
     methods
@@ -33,7 +33,7 @@ classdef cvpartition2 < cvpartition
                     switch varargin{i}
                         case 'Stratify'
                             sid = varargin{5};
-                            [uniq_sid,b] = unique(sid);
+                            [~,b] = unique(sid);
                             varargin{1} = varargin{1}(b);
                             delete = i:i+1;
                     end
@@ -42,6 +42,9 @@ classdef cvpartition2 < cvpartition
             varargin(delete) = [];
             
             cv@cvpartition(varargin{:});
+            Impl = cvpartitionInMemoryImpl2(sid,varargin{:});
+            Impl = Impl.updateParams();
+            cv.Impl = Impl;
             
             cv.sid = sid;
         end % cvpartition constructor

@@ -39,7 +39,7 @@ function [newobj, varargout] = mean(obj, varargin)
             elseif ischar(t.(tnames{i}))
                 vars{i} = t.(tnames{i})(1,:);
             else
-                warning(['No policy for quartiling datatype ''' class(t.(tnames{i})) ''' in metadata_table. Dropping column ''' tnames{i} '''']);
+                warning(['No policy for averaging datatype ''' class(t.(tnames{i})) ''' in metadata_table. Dropping column ''' tnames{i} '''']);
                 vars{i} = [];
             end
         end
