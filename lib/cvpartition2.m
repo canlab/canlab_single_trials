@@ -49,6 +49,7 @@ classdef cvpartition2 < cvpartition
             cv.sid = sid;
         end % cvpartition constructor
         
+        %{
         function testidx = test(cv,varargin)
             testidx = test(cv.Impl,varargin{:});
             uniq_sid = unique(cv.sid);
@@ -62,5 +63,6 @@ classdef cvpartition2 < cvpartition
             train_sid = uniq_sid(trainidx);
             trainidx = ismember(cv.sid,train_sid);
         end
+        %}
     end    
 end
