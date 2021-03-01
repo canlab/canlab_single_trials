@@ -21,6 +21,7 @@ classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
             obj = obj.updateParams();
         end
     end
+    
     methods (Access = ?cvpartition2)        
         function obj = updateParams(obj)
             obj.N = length(obj.sid);
