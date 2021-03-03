@@ -1,5 +1,6 @@
 % this method corrects the counters of cvpartitions, which under the
-% cvpartition2 scheme don't count obsevations, and instead count blocks.
+% cvpartition2 scheme otherwise don't count obsevations, and instead 
+% count blocks.
 classdef cvpartitionInMemoryImpl2 < internal.stats.cvpartitionInMemoryImpl
     properties (SetAccess = private)
         sid = []
