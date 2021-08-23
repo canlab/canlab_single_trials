@@ -54,17 +54,30 @@ t99 = tic;
 
 warning('off','all');
 
-addpath(genpath('/projects/bope9760/CanlabCore/CanlabCore'));
-addpath(genpath('/projects/bope9760/spm12'));
-addpath(genpath('/projects/bope9760/single_trials_overview/repo')); % single_trials repo
-addpath('/work/ics/data/projects/wagerlab/labdata/projects/canlab_single_trials_for_git_repo/'); % single trial data on blanca
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/CanlabCore/CanlabCore'));
+addpath('/dartfs-hpc/rc/home/m/f0042vm/software/spm12');
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/canlab_single_trials')); % single_trials repo
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/canlab_single_trials_private')); % single_trials private repo
+addpath(genpath('/dartfs-hpc/rc/home/m/f0042vm/software/canlab/ooFmriDataObjML')); % needed for cvpartition2
+addpath('/dartfs/rc/lab/C/CANlab/labdata/projects/canlab_single_trials_for_git_repo'); % single trial data on blanca
 
+% remove private repos from this list if you don't have access. Repos
+% accessible to the public are listed on the canlab_single_trials github
+% page and in its README.md file
 st_datasets = {'nsf','bmrk3pain','bmrk3warm','bmrk4','bmrk5pain',...
         'bmrk5snd','remi','scebl','ie2','ie','exp','levoderm','stephan',...
         'romantic','ilcp'};
 
 % import studies, suppressing output to minimize clutter (it's long and 
-% redundant with more detailed information we provide below)
+% redundant with more detailed information we provide below). This isn't
+% available in the public repo.
+% if you don't have access to the private repo you can substitute something
+% like this instead (but you may need to debug, this is a general sketch):
+% for i = 1:length(st_datasets) 
+%   dat{i} = load_image_set(st_datasets{i})); 
+%   dat{i}.metadata_table.study_id = i*ones(height(dat{i}.metadata_table),1);
+% end
+% all_dat = cat(dat{:}); clar dat;
 cmd = 'all_dat = load_image_set(''all_single_trials'')';
 fprintf('cmd: %s\n',cmd);
 evalc(cmd);
@@ -172,7 +185,7 @@ parfor i = 1:n_studies
     %   b) keep folds the same across algorithms (to reduce slicing
     %       related variance)
     [~,~,subject_id] = unique(char(this_dat.metadata_table.subject_id),'rows','stable');
-    cv = cvpartition2(ones(size(this_dat.dat,2),1), 'KFOLD', 5, 'Stratify', subject_id);
+    cv = cvpartition2(ones(size(this_dat.dat,2),1), 'GroupKFold', 5, 'Group', subject_id);
     fold_labels = zeros(size(this_dat.dat,2),1);
     for j = 1:cv.NumTestSets
         fold_labels(cv.test(j)) = j;
