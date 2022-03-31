@@ -89,7 +89,7 @@ single trial fmri_data objects have,
 - nsf
 - bmrk3*
 - bmrk4
-- bmrk5
+- bmrk5*
 - exp
 - ie
 - ie2
