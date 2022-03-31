@@ -62,6 +62,10 @@ function path = download_dataset(dataset_name, varargin)
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24211832');
         case 'bmrk4'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24212039');
+        case 'bmrk5pain'
+            inFile = websave(outFile, 'https://figshare.com/ndownloader/files/34638242');
+        case 'bmrk5snd'
+            inFile = websave(outFile, 'https://figshare.com/ndownloader/files/34638929');
         case 'scebl'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24213212');
         case 'ie2'
