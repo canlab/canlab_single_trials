@@ -31,6 +31,7 @@ function [obj, objcodes] = cat(obj,varargin)
         end
     end
     obj.additional_info = merge_struct(obj.additional_info, imgcnt);
+    obj.removed_images = sum(obj.removed_images);
 end
 
 
