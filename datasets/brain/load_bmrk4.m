@@ -42,7 +42,7 @@ function [image_obj, networknames, imagenames] = load_bmrk4(varargin)
     if verbose, fprintf('Loading: %s\n', fmri_data_file); end
 
     image_obj = fmri_data_st(importdata(fmri_data_file));
-    image_obj.dat = image_obj.dat.*image_obj.metadata_table.globalSignalAmp; % corrects for the failure of single_trial_analysis.m to incorporate global signal scaling information
+    %image_obj.dat = image_obj.dat.*image_obj.metadata_table.globalSignalAmp; % corrects for the failure of single_trial_analysis.m to incorporate global signal scaling information
 
     if verbose
         descriptives(image_obj); 
