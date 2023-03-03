@@ -80,6 +80,8 @@ function path = download_dataset(dataset_name, varargin)
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24214487');
         case 'ilcp'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24214928');
+        case 'baliki_nac_neuron'
+            inFile = websave(outFile, 'https://figshare.com/ndownloader/files/39477889');
         otherwise
             if exist('download_private_dataset')
                 % this function is provided by canlab_single_trials_private for in house use
