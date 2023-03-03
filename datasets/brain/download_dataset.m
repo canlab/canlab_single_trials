@@ -37,7 +37,7 @@ function path = download_dataset(dataset_name, varargin)
     % Prompt the user to continue to avoid accidentally downloading a huge
     % amount of data unknowingly
     if ~forcedl
-        if isempty(which([dataset_name, '_data.mat']))
+        if isempty(which([dataset_name, '_data.mat'])) and isempty(which([dataset_name, '_data.nii.gz']))
             fprintf('%s dataset not found in Matlab path.\n', dataset_name);        
             x = input('Would you like to attempt to download it to the current working directory? y/n\n','s');
         else
@@ -52,7 +52,7 @@ function path = download_dataset(dataset_name, varargin)
     
     
     outFile = [dataset_name, '_data.mat'];
-    if verbose, fprintf('Downloading %s...\n', outFile); end
+    if verbose, fprintf('Downloading %s...\n', dataset_name); end
     switch dataset_name
         case 'nsf'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24165545');
@@ -81,7 +81,7 @@ function path = download_dataset(dataset_name, varargin)
         case 'ilcp'
             inFile = websave(outFile, 'https://ndownloader.figshare.com/files/24214928');
         case 'baliki_nac_neuron'
-            inFile = websave(outFile, 'https://figshare.com/ndownloader/files/39477889');
+            inFile = websave([dataset_name, '_data.nii.gz'], 'https://figshare.com/ndownloader/files/39477889');
         otherwise
             if exist('download_private_dataset')
                 % this function is provided by canlab_single_trials_private for in house use

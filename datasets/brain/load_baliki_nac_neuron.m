@@ -24,12 +24,13 @@ function [image_obj, networknames, imagenames] = load_baliki_nac_neuron(varargin
     fmri_data_file = which([dataset_name, '_data.nii.gz']);
     metadata_file = which([dataset_name, '_data.csv']);
 
-    if isempty(fmri_data_file)
-        fmri_data_file = download_private_dataset(dataset_name, varargin{:});
+    if isempty(fmri_data_file)        
+        fmri_data_file = download_dataset(dataset_name, varargin{:});
     end
 
     if isempty(metadata_file)
-        fmri_data_file = download_private_dataset([dataset_name '_metadata'], varargin{:});
+        %fmri_data_file = download_private_dataset([dataset_name '_metadata'], varargin{:});
+        error('Could not find %s in canlab_single_trials repo.', metadata_file);
     end
 
     if checkmd5 
