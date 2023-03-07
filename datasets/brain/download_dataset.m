@@ -37,7 +37,7 @@ function path = download_dataset(dataset_name, varargin)
     % Prompt the user to continue to avoid accidentally downloading a huge
     % amount of data unknowingly
     if ~forcedl
-        if isempty(which([dataset_name, '_data.mat'])) and isempty(which([dataset_name, '_data.nii.gz']))
+        if isempty(which([dataset_name, '_data.mat'])) & isempty(which([dataset_name, '_data.nii.gz']))
             fprintf('%s dataset not found in Matlab path.\n', dataset_name);        
             x = input('Would you like to attempt to download it to the current working directory? y/n\n','s');
         else
