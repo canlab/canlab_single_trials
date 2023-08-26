@@ -74,6 +74,7 @@ The following are available as fmri_data objects (cast to fmri_data_st objects i
 - [romantic](https://ndownloader.figshare.com/files/24214487)
 - [scebl](https://ndownloader.figshare.com/files/24213212)
 - [stephan](https://ndownloader.figshare.com/files/24211892)
+- [baliki_nac_neuron](https://figshare.com/ndownloader/files/39477889)
 
 single trial fmri_data objects have,
 - all trials (including non-response trials with nan entries), unmodified, taken from single trials google drive
