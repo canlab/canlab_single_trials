@@ -29,7 +29,7 @@ function encrypt_dataset(inFile, outFile, varargin)
     for i = 1:length(varargin)
         if ischar(varargin{i})
             switch varargin{i}
-                case 'key':
+                case 'key'
                     secret = varargin{i+1};
             end
         end

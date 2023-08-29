@@ -30,7 +30,13 @@ function newdat = slice_struct(dat, imgcnt, idx, varargin)
             end
         elseif ~ismember(this_fname,top_fnames) % prevent it from modifying toplvl fields
             ffnames = {varargin{:}, this_fname}; % this is needed for throwing informative errors
-            newdat.(this_fname) = get_slice(this_field, imgcnt, idx, ffnames{:});
+            try
+                newdat.(this_fname) = get_slice(this_field, imgcnt, idx, ffnames{:});
+            catch
+                warning('Could not split ''%s'', copying entire parent structure.', this_fname)
+                newdat = dat;
+                break;
+            end
         end
     end
 end

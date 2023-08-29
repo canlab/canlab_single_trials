@@ -117,9 +117,14 @@ function dat = expand_struct(dat)
         newfnames = fieldnames(dat{i});
         fnames = [fnames, newfnames];
         for j = 1:length(newfnames)
-            if isstruct(dat{i}.(newfnames{j}))
-                isStruct = [isStruct; 1];
-            else
+            try
+                if isstruct(dat{i}.(newfnames{j}))
+                    isStruct = [isStruct; 1];
+                else
+                    isStruct = [isStruct; 0];
+                end
+            catch
+                warning('Failed to handle ''%s''', newfnames{j})
                 isStruct = [isStruct; 0];
             end
         end
