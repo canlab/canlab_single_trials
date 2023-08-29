@@ -67,6 +67,8 @@ The following are available as fmri_data objects (cast to fmri_data_st objects i
 - [bmrk3pain](https://ndownloader.figshare.com/files/24211439)
 - [bmrk3warm](https://ndownloader.figshare.com/files/24211832)
 - [bmrk4](https://ndownloader.figshare.com/files/24212039)
+- [bmrk5pain](https://figshare.com/ndownloader/files/34638242)
+- [bmrk5snd](https://figshare.com/ndownloader/files/34638929)
 - [exp](https://ndownloader.figshare.com/files/24212432)
 - [ie](https://ndownloader.figshare.com/files/24215003)
 - [ie2](https://ndownloader.figshare.com/files/24214952)
