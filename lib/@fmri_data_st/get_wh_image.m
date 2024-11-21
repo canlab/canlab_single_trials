@@ -7,7 +7,12 @@ function obj = get_wh_image(obj, idx)
         obj.additional_info = cell2mat(obj.additional_info');
     end
     imgcnt = size(obj.dat,2);
+    
+    % handle table separately to avoid some edge cases where an n x n
+    % metadata table is truncated along both dimensions
+    metadata_table = obj.metadata_table; 
     obj = get_wh_image@fmri_data(obj,idx);
+    obj.metadata_table = metadata_table(idx,:);
     
     % this is the stuff the canlab function does not do
     obj = slice_struct(obj, imgcnt, idx);

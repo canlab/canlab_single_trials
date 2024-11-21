@@ -4,6 +4,8 @@
 % them using a presaved decryption key specific to this repository. This
 % function uses the Java Cryptox libraries for encryption/decryption.
 %
+% decrypt_dataset(inFile, outFile, varargin)
+%
 % Input ::
 %   inFile  - character array path to encrypted file
 %
