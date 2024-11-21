@@ -52,7 +52,7 @@ function dat = expand_metadata_table(dat)
             fnames = [fnames, these_fnames];
             for j = 1:length(these_fnames)
                 if iscellstr(dat{i}.metadata_table.(these_fnames{j}))
-                    fclass = [fclass, 'string'];
+                    fclass = [fclass, {'string'}];
                 else               
                     fclass = [fclass, {class(dat{i}.metadata_table.(these_fnames{j}))}];
                 end
