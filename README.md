@@ -29,6 +29,7 @@ Dependencies (add these to your path first, and ensure they're up to date)
 Clone the repo, add it to your Matlab path. If single trial dataset are available, add those to your matlab path as well (otherwise they will be downloaded). 
 
 If you have access to canlab_single_trials_private please also add that to your path and refer to the setup section of its README to complete installation.
+https://github.com/canlab/canlab_single_trials_private
 
 Downloaded datasets come from the web and are automatically downloaded by our downloader method.
 
@@ -109,6 +110,8 @@ dataset objects have,
 - all data was checked for sensible experimental effects using mixed models.
 
 ### Using private datasets ###
+
+https://github.com/canlab/canlab_single_trials_private
 
 If approved for access to a private dataset you can access it using functions provided by this library. You will need
 
